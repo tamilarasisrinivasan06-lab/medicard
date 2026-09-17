@@ -107,7 +107,7 @@ async function seed() {
     role: "doctor",
     gender: "male",
   });
-  await upsertDoctor({
+  const doc1RowId = await upsertDoctor({
     userId: doc1Id,
     specialization: "Cardiology",
     qualification: "MD, DM Cardiology",
@@ -116,7 +116,7 @@ async function seed() {
     hospitalId: cityCare,
     fee: 800,
   });
-  await upsertDoctor({
+  const doc2RowId = await upsertDoctor({
     userId: doc2Id,
     specialization: "General Medicine",
     qualification: "MBBS, MD",
@@ -286,9 +286,9 @@ async function seed() {
   console.log("Sample medical records and medications ready.");
 
   const apptDefs = [
-    { patientId: patientIds[0], doctorId: null, hospitalId: cityCare, offset: 3, reason: "Blood pressure review", status: "scheduled" },
-    { patientId: patientIds[1], doctorId: null, hospitalId: sunrise, offset: 7, reason: "Anemia follow-up", status: "confirmed" },
-    { patientId: patientIds[2], doctorId: null, hospitalId: cityCare, offset: -10, reason: "General checkup", status: "completed" },
+    { patientId: patientIds[0], doctorId: doc1RowId, hospitalId: cityCare, offset: 3, reason: "Blood pressure review", status: "scheduled" },
+    { patientId: patientIds[1], doctorId: doc2RowId, hospitalId: sunrise, offset: 7, reason: "Anemia follow-up", status: "confirmed" },
+    { patientId: patientIds[2], doctorId: doc1RowId, hospitalId: cityCare, offset: -10, reason: "General checkup", status: "completed" },
   ];
 
   for (const a of apptDefs) {
@@ -299,9 +299,9 @@ async function seed() {
     if (existing.rows.length > 0) continue;
     const date = new Date(Date.now() + a.offset * 24 * 60 * 60 * 1000);
     await pool.query(
-      `INSERT INTO appointments (patient_id, hospital_id, appointment_date, appointment_time, reason, status)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [a.patientId, a.hospitalId, date.toISOString().slice(0, 10), "10:00", a.reason, a.status]
+      `INSERT INTO appointments (patient_id, doctor_id, hospital_id, appointment_date, appointment_time, reason, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [a.patientId, a.doctorId, a.hospitalId, date.toISOString().slice(0, 10), "10:00", a.reason, a.status]
     );
   }
   console.log("Sample appointments ready.");
