@@ -22,7 +22,7 @@ export const ROLES = {
     idLabel: ROLE_ID_LABELS.patient,
     placeholder: ROLE_PLACEHOLDERS.patient,
     icon: 'patient',
-    color: '#0eadc8',
+    color: '#2563eb',
   },
   doctor: {
     key: 'doctor',
@@ -31,7 +31,7 @@ export const ROLES = {
     idLabel: ROLE_ID_LABELS.doctor,
     placeholder: ROLE_PLACEHOLDERS.doctor,
     icon: 'doctor',
-    color: '#2b9e64',
+    color: '#1d4ed8',
   },
   hospital: {
     key: 'hospital',
@@ -40,7 +40,7 @@ export const ROLES = {
     idLabel: ROLE_ID_LABELS.hospital,
     placeholder: ROLE_PLACEHOLDERS.hospital,
     icon: 'hospital',
-    color: '#d88a1d',
+    color: '#3b82f6',
   },
   admin: {
     key: 'admin',
@@ -49,7 +49,7 @@ export const ROLES = {
     idLabel: ROLE_ID_LABELS.admin,
     placeholder: ROLE_PLACEHOLDERS.admin,
     icon: 'admin',
-    color: '#5b5bd6',
+    color: '#1e3a8a',
   },
   super_admin: {
     key: 'super-admin',
@@ -58,7 +58,7 @@ export const ROLES = {
     idLabel: ROLE_ID_LABELS.super_admin,
     placeholder: ROLE_PLACEHOLDERS.super_admin,
     icon: 'crown',
-    color: '#a04be1',
+    color: '#172554',
   },
 }
 
