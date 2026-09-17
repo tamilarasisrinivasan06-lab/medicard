@@ -14,14 +14,18 @@ function Login() {
     setMessage('')
     setError('')
 
-    const result = await loginUser(email, password)
+    try {
+      const result = await loginUser(email, password)
 
-    if (result.success) {
-      setSession(result.data.token, result.data.user.role, true)
-      setMessage(`Login successful. Welcome, ${result.data.user.name} (${result.data.user.role})`)
-      navigate(dashboardForRole(result.data.user.role), { replace: true })
-    } else {
-      setError(result.message || 'Invalid login ID or password')
+      if (result.success) {
+        setSession(result.data.token, result.data.user.role, true)
+        setMessage(`Login successful. Welcome, ${result.data.user.name} (${result.data.user.role})`)
+        navigate(dashboardForRole(result.data.user.role), { replace: true })
+      } else {
+        setError(result.message || 'Invalid email or password.')
+      }
+    } catch {
+      setError('Unable to reach the server. Please try again.')
     }
   }
 

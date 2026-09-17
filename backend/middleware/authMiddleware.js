@@ -55,7 +55,7 @@ async function protect(req, res, next) {
     }
 
     const user = await findUserById(decoded.sub);
-    if (!user) {
+    if (!user || user.is_active === false) {
       return res.status(401).json({ success: false, message: "Account not found" });
     }
 

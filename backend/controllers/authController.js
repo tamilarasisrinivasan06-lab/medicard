@@ -22,7 +22,8 @@ async function register(req, res, next) {
   try {
     assertDB();
 
-    const { fullName, name, email, phone, password, role, dateOfBirth, gender } = req.body;
+    const { fullName, name, phone, password, role, dateOfBirth, gender } = req.body;
+    const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
 
     if (!fullName && !name) {
       return res.status(400).json({ success: false, message: "Full name is required" });
@@ -67,6 +68,9 @@ async function register(req, res, next) {
       await client.query("COMMIT");
     } catch (err) {
       await client.query("ROLLBACK");
+      if (err.code === "23505" && ["users_email_key", "users_email_lower_key"].includes(err.constraint)) {
+        return res.status(409).json({ success: false, message: "An account with this email already exists." });
+      }
       throw err;
     } finally {
       client.release();
@@ -79,6 +83,10 @@ async function register(req, res, next) {
       data: { token, user: users.toPublicUser(createdUser) },
     });
   } catch (error) {
+    console.error("Registration failed:", error.message);
+    if (error.code === "ECONNREFUSED" || error.code === "57P03" || error.status === 503 || /connection|database/i.test(error.message)) {
+      return res.status(503).json({ success: false, message: "Unable to create your account right now. Please try again." });
+    }
     return next(error);
   }
 }
@@ -87,13 +95,14 @@ async function login(req, res, next) {
   try {
     assertDB();
 
-    const { email, password, role: requestedRole } = req.body;
+    const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const { password, role: requestedRole } = req.body;
     if (!email || !password) {
       return res.status(400).json({ success: false, message: "Email and password are required" });
     }
 
     const user = await users.findUserByEmail(email);
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    if (!user || user.is_active === false || !(await bcrypt.compare(password, user.password_hash))) {
       return res.status(401).json({ success: false, message: "Invalid login ID or password" });
     }
 
@@ -108,6 +117,10 @@ async function login(req, res, next) {
       data: { token, user: users.toPublicUser(user) },
     });
   } catch (error) {
+    console.error("Login failed:", error.message);
+    if (error.code === "ECONNREFUSED" || error.code === "57P03" || error.status === 503 || /connection|database/i.test(error.message)) {
+      return res.status(503).json({ success: false, message: "Unable to sign in right now. Please try again." });
+    }
     return next(error);
   }
 }

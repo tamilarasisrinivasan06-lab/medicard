@@ -61,7 +61,7 @@ async function createDoctor(userId, fields = {}, db = pool) {
       fields.consultationFee ?? null,
     ]
   );
-  return getDoctorById(rows[0].id);
+  return getDoctorById(rows[0].id, db);
 }
 
 async function updateDoctor(userId, fields) {

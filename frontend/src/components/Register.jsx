@@ -25,13 +25,17 @@ function Register() {
     setMessage('')
     setError('')
 
-    const result = await registerUser(form)
+    try {
+      const result = await registerUser(form)
 
-    if (result.success) {
-      setMessage(`${result.message} You can now log in.`)
-      setForm({ name: '', email: '', phone: '', dateOfBirth: '', gender: '', password: '', role: 'patient' })
-    } else {
-      setError(result.message || 'Registration failed')
+      if (result.success) {
+        setMessage(`${result.message}. You can now log in.`)
+        setForm({ name: '', email: '', phone: '', dateOfBirth: '', gender: '', password: '', role: 'patient' })
+      } else {
+        setError(result.message || 'Unable to create your account right now. Please try again.')
+      }
+    } catch {
+      setError('Unable to reach the server. Please try again.')
     }
   }
 

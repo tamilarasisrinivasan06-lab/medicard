@@ -37,7 +37,7 @@ function LoginForm({ config }) {
         setSession(result.data.token, result.data.user.role, remember)
         navigate(dashboardForRole(result.data.user.role), { replace: true })
       } else {
-        setError('Invalid Login ID or Password')
+        setError(result.message || 'Invalid email or password.')
       }
     } catch {
       setError('Could not reach the server. Please try again.')

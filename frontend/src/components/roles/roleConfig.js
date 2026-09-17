@@ -1,17 +1,17 @@
 export const ROLE_ID_LABELS = {
-  patient: 'Patient ID',
-  doctor: 'Doctor ID',
-  hospital: 'Hospital ID',
-  admin: 'Admin ID',
-  super_admin: 'Super Admin ID',
+  patient: 'Email address',
+  doctor: 'Email address',
+  hospital: 'Email address',
+  admin: 'Email address',
+  super_admin: 'Email address',
 }
 
 export const ROLE_PLACEHOLDERS = {
-  patient: 'Enter your Patient ID',
-  doctor: 'Enter your Doctor ID',
-  hospital: 'Enter your Hospital ID',
-  admin: 'Enter your Admin ID',
-  super_admin: 'Enter your Super Admin ID',
+  patient: 'Enter your email address',
+  doctor: 'Enter your email address',
+  hospital: 'Enter your email address',
+  admin: 'Enter your email address',
+  super_admin: 'Enter your email address',
 }
 
 export const ROLES = {
