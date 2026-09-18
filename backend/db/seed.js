@@ -9,16 +9,16 @@ if (!process.env.DATABASE_URL) {
 }
 
 async function upsertHospital(h) {
+  const existing = await pool.query("SELECT id FROM hospitals WHERE name = $1 ORDER BY id LIMIT 1", [h.name]);
+  if (existing.rows.length > 0) return existing.rows[0].id;
+
   const { rows } = await pool.query(
     `INSERT INTO hospitals (name, address, city, state, pincode, phone, email)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
-     ON CONFLICT DO NOTHING
      RETURNING id`,
     [h.name, h.address, h.city, h.state, h.pincode, h.phone, h.email]
   );
-  if (rows.length > 0) return rows[0].id;
-  const existing = await pool.query("SELECT id FROM hospitals WHERE name = $1", [h.name]);
-  return existing.rows[0].id;
+  return rows[0].id;
 }
 
 async function upsertUser({ fullName, email, phone, password, role, dateOfBirth, gender, hospitalId }) {
@@ -38,7 +38,10 @@ async function upsertUser({ fullName, email, phone, password, role, dateOfBirth,
 
 async function upsertDoctor({ userId, specialization, qualification, registrationNumber, experience, hospitalId, fee }) {
   const existing = await pool.query("SELECT id FROM doctors WHERE user_id = $1", [userId]);
-  if (existing.rows.length > 0) return existing.rows[0].id;
+  if (existing.rows.length > 0) {
+    await pool.query("UPDATE doctors SET hospital_id = $1 WHERE user_id = $2", [hospitalId || null, userId]);
+    return existing.rows[0].id;
+  }
   const { rows } = await pool.query(
     `INSERT INTO doctors (user_id, specialization, qualification, registration_number, experience, hospital_id, consultation_fee)
      VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
@@ -90,6 +93,37 @@ async function seed() {
     role: "super_admin",
   });
   console.log(`Super admin ready: Platform Super Admin (${superAdminId})`);
+
+  const pharmacistId = await upsertUser({
+    fullName: "Dev Pharmacist",
+    email: "dev.pharmacy@medicard.test",
+    phone: "+91-9000000004",
+    password: "Pharmacy@123",
+    role: "pharmacist",
+    gender: "female",
+    hospitalId: cityCare,
+  });
+  const labStaffId = await upsertUser({
+    fullName: "Dev Lab Technician",
+    email: "dev.lab@medicard.test",
+    phone: "+91-9000000005",
+    password: "Lab@123",
+    role: "diagnostic_staff",
+    gender: "male",
+    hospitalId: cityCare,
+  });
+  console.log(`Pharmacy ready: Dev Pharmacist (${pharmacistId}); Lab ready: Dev Lab Technician (${labStaffId})`);
+
+  const hospitalUserId = await upsertUser({
+    fullName: "City Care Hospital Admin",
+    email: "dev.hospital@medicard.test",
+    phone: "+91-9000000006",
+    password: "Hospital@123",
+    role: "hospital",
+    gender: "female",
+    hospitalId: cityCare,
+  });
+  console.log(`Hospital portal ready: City Care Hospital Admin (${hospitalUserId})`);
 
   const doc1Id = await upsertUser({
     fullName: "Dr. Anita Rao",
@@ -338,6 +372,8 @@ async function seed() {
   console.log("    dev.patient1@medicard.test / Patient@123");
   console.log("    dev.patient2@medicard.test / Patient@123");
   console.log("    dev.patient3@medicard.test / Patient@123");
+  console.log("    dev.pharmacy@medicard.test / Pharmacy@123");
+  console.log("    dev.lab@medicard.test / Lab@123");
   console.log("========================================");
 
   await pool.end();

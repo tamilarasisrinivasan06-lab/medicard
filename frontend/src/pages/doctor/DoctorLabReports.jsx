@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getDoctorLabReports, getDoctorLabRequests, getDoctorPatients, createLabReport } from '../../api'
+import { getDoctorLabReports, getDoctorLabRequests, getDoctorPatients, createLabReport, uploadPatientFile } from '../../api'
 import {
   useAsync,
   useToast,
@@ -10,8 +10,11 @@ import {
   EmptyState,
   Modal,
   Field,
+  FileLink,
   PageHeader,
   formatDate,
+  UPLOAD_ACCEPT,
+  validateUpload,
 } from '../../components/doctor/ui'
 import { ReportIcon, PlusIcon, SearchIcon } from '../../components/doctor/icons'
 
@@ -38,8 +41,18 @@ function DoctorLabReports() {
 
   async function handleCreate(form) {
     setBusy(true)
-    const { patientId, ...payload } = form
-    const res = await createLabReport(patientId, payload)
+    const { patientId, file, ...payload } = form
+    let fileUrl
+    if (file) {
+      const upload = await uploadPatientFile(patientId, file)
+      if (!upload.success) {
+        setBusy(false)
+        notify(upload.message || 'File upload failed', 'error')
+        return
+      }
+      fileUrl = upload.data.url
+    }
+    const res = await createLabReport(patientId, { ...payload, fileUrl })
     setBusy(false)
     if (res.success) {
       notify('Lab report added')
@@ -96,11 +109,7 @@ function DoctorLabReports() {
                 </div>
                 {r.summary && <p style={{ marginTop: 10 }}>{r.summary}</p>}
                 {r.reportText && <p className="doc-note" style={{ whiteSpace: 'pre-wrap' }}>{r.reportText}</p>}
-                {r.fileUrl && (
-                  <a className="doc-link" href={r.fileUrl} target="_blank" rel="noreferrer">
-                    View attached file
-                  </a>
-                )}
+                {r.fileUrl && <FileLink url={r.fileUrl}>View attached file</FileLink>}
               </div>
             ))}
           </div>
@@ -120,8 +129,16 @@ function DoctorLabReports() {
 }
 
 function NewLabReportModal({ open, onClose, onSubmit, busy, patients, labRequests }) {
-  const [form, setForm] = useState({ patientId: '', labRequestId: '', title: '', summary: '', reportText: '', fileUrl: '', reportDate: today() })
+  const [form, setForm] = useState({ patientId: '', labRequestId: '', title: '', summary: '', reportText: '', file: null, reportDate: today() })
+  const [fileError, setFileError] = useState('')
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
+
+  function handleFile(e) {
+    const file = e.target.files?.[0] || null
+    const error = validateUpload(file)
+    setFileError(error)
+    set('file', error ? null : file)
+  }
 
   const patientRequests = useMemo(
     () => labRequests.filter((r) => String(r.patientId) === String(form.patientId)),
@@ -137,7 +154,7 @@ function NewLabReportModal({ open, onClose, onSubmit, busy, patients, labRequest
       footer={
         <>
           <button className="doc-btn doc-btn-ghost" onClick={onClose} disabled={busy}>Cancel</button>
-          <button className="doc-btn" disabled={busy || !form.patientId || !form.title.trim()} onClick={() => onSubmit({ ...form, labRequestId: form.labRequestId || undefined })}>
+          <button className="doc-btn" disabled={busy || !form.patientId || !form.title.trim() || Boolean(fileError)} onClick={() => onSubmit({ ...form, labRequestId: form.labRequestId || undefined })}>
             {busy ? 'Saving…' : 'Add report'}
           </button>
         </>
@@ -177,9 +194,10 @@ function NewLabReportModal({ open, onClose, onSubmit, busy, patients, labRequest
       <Field label="Report details">
         <textarea rows="4" value={form.reportText} onChange={(e) => set('reportText', e.target.value)} />
       </Field>
-      <Field label="File URL" hint="Optional link to a stored report file">
-        <input value={form.fileUrl} onChange={(e) => set('fileUrl', e.target.value)} />
+      <Field label="Attach file" hint="JPG, PNG, WEBP, GIF, PDF, TXT, CSV, DOC(X), XLS(X) · up to 10 MB">
+        <input type="file" accept={UPLOAD_ACCEPT} onChange={handleFile} />
       </Field>
+      {fileError && <Alert>{fileError}</Alert>}
     </Modal>
   )
 }

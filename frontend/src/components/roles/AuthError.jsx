@@ -1,7 +1,7 @@
 function AuthError({ message }) {
   if (!message) return null
   return (
-    <p className="auth-error" role="alert">
+    <p className="authx-alert" role="alert">
       {message}
     </p>
   )

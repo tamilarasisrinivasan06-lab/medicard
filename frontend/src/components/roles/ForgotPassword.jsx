@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { forgotPassword } from '../../api'
+import PageContainer from './PageContainer'
+import BrandHeader from './BrandHeader'
 import AuthError from './AuthError'
 import LoadingButton from './LoadingButton'
-import { ArrowLeftIcon } from './roleIcons'
+import { ArrowLeftIcon, LockIcon } from './roleIcons'
 
 function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -39,51 +41,59 @@ function ForgotPassword() {
   }
 
   return (
-    <div className="role-page">
-      <div className="medicard-brand">
-        <span className="medicard-logo brand-logo" aria-hidden="true">
-          M
-        </span>
-        <span className="medicard-brand-name">MediCard</span>
-      </div>
+    <PageContainer narrow>
+      <Link to="/login" className="authx-back">
+        <ArrowLeftIcon size={16} /> Back to login
+      </Link>
 
-      <h1 className="role-title">Forgot Password</h1>
-      <p className="role-subtitle">Enter the login ID for your MediCard account</p>
+      <BrandHeader />
 
-      <form className="auth-form role-login-form" onSubmit={handleSubmit} noValidate>
-        <div className="role-field">
-          <label htmlFor="forgot-email">Login ID (Email)</label>
-          <input
-            id="forgot-email"
-            name="email"
-            type="email"
-            value={email}
-            placeholder="Enter your email"
-            onChange={(e) => {
-              setEmail(e.target.value)
-              setError('')
-            }}
-            autoComplete="email"
-          />
+      <div className="authx-card">
+        <div className="authx-login-head">
+          <span className="authx-login-icon" style={{ background: '#eaf2fe', color: '#1a73e8' }} aria-hidden="true">
+            <LockIcon size={26} />
+          </span>
+          <div>
+            <h1>Forgot Password</h1>
+            <p>Enter the login ID for your MediCard account</p>
+          </div>
         </div>
 
-        <AuthError message={error} />
-        {message && (
-          <p className="role-success" role="status">
-            {message}
-          </p>
-        )}
-        {devToken && <p className="role-note">{devToken}</p>}
+        <form className="authx-form" onSubmit={handleSubmit} noValidate>
+          <div className="authx-field">
+            <label htmlFor="forgot-email">Login ID (Email)</label>
+            <input
+              id="forgot-email"
+              name="email"
+              type="email"
+              value={email}
+              placeholder="Enter your email"
+              onChange={(e) => {
+                setEmail(e.target.value)
+                setError('')
+              }}
+              autoComplete="email"
+            />
+          </div>
 
-        <LoadingButton type="submit" loading={submitting} disabled={!valid} loadingText="Sending…">
-          Send Reset Link
-        </LoadingButton>
+          <AuthError message={error} />
+          {message && (
+            <p className="authx-success" role="status">
+              {message}
+            </p>
+          )}
+          {devToken && <p className="authx-devnote">{devToken}</p>}
 
-        <Link to="/login" className="role-change-link">
-          <ArrowLeftIcon size={16} /> Back to Login
-        </Link>
-      </form>
-    </div>
+          <LoadingButton type="submit" loading={submitting} disabled={!valid} loadingText="Sending…">
+            Send Reset Link
+          </LoadingButton>
+
+          <Link to="/login" className="authx-change">
+            <ArrowLeftIcon size={16} /> Back to Login
+          </Link>
+        </form>
+      </div>
+    </PageContainer>
   )
 }
 

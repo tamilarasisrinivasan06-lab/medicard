@@ -20,7 +20,11 @@ function PatientMediCard() {
       .then((result) => {
         if (result.success) {
           setData(result.data)
-        } else if (result.message === 'Invalid or expired token' || result.message === 'Authentication required') {
+        } else if (
+          result.message === 'Invalid or expired token' ||
+          result.message === 'Authentication required' ||
+          result.message === 'Session expired. Please log in again.'
+        ) {
           localStorage.removeItem('token')
           localStorage.removeItem('role')
           navigate('/login')

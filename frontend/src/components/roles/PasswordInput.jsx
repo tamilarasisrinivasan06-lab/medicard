@@ -5,7 +5,7 @@ function PasswordInput({ id, name, value, onChange, onBlur, placeholder, autoCom
   const [visible, setVisible] = useState(false)
 
   return (
-    <div className="password-field">
+    <div className="authx-password">
       <input
         id={id}
         name={name}
@@ -18,7 +18,7 @@ function PasswordInput({ id, name, value, onChange, onBlur, placeholder, autoCom
       />
       <button
         type="button"
-        className="password-toggle"
+        className="authx-password-toggle"
         aria-label={visible ? 'Hide password' : 'Show password'}
         onClick={() => setVisible((v) => !v)}
       >

@@ -17,6 +17,7 @@ import {
   createFollowUp,
   deleteDocument,
   deleteConsultation,
+  uploadPatientFile,
 } from '../../api'
 import {
   useAsync,
@@ -30,9 +31,12 @@ import {
   Modal,
   ConfirmDialog,
   Field,
+  FileLink,
   PageHeader,
   formatDate,
   formatDateTime,
+  UPLOAD_ACCEPT,
+  validateUpload,
 } from '../../components/doctor/ui'
 import {
   StethoscopeIcon,
@@ -380,7 +384,7 @@ function PatientDetail() {
                 <div className="doc-card" key={p.id} style={{ margin: 0 }}>
                   <div className="doc-flex-between">
                     <strong>{formatDate(p.prescriptionDate)}</strong>
-                    <StatusBadge status="accepted" />
+                    <span className="doc-note">{p.items.length} medicine{p.items.length === 1 ? '' : 's'}</span>
                   </div>
                   {p.diagnosis && <p className="doc-note">Diagnosis: {p.diagnosis}</p>}
                   <div className="doc-table-wrap doc-mt" style={{ marginTop: 12 }}>
@@ -518,6 +522,7 @@ function PatientDetail() {
                       <td>{d.notes || '—'}</td>
                       <td>{formatDate(d.createdAt)}</td>
                       <td className="doc-table-actions">
+                        {d.fileUrl && <FileLink url={d.fileUrl}>Open</FileLink>}
                         <button className="doc-btn doc-btn-ghost doc-btn-sm" onClick={() => setConfirmDeleteDoc(d)}>
                           <TrashIcon size={14} />
                         </button>
@@ -597,7 +602,18 @@ function PatientDetail() {
         requests={byPatient.labRequests}
         onSubmit={async (payload) => {
           setBusy(true)
-          const res = await createLabReport(patientId, payload)
+          const { file, ...rest } = payload
+          let fileUrl
+          if (file) {
+            const upload = await uploadPatientFile(patientId, file)
+            if (!upload.success) {
+              setBusy(false)
+              notify(upload.message || 'File upload failed', 'error')
+              return
+            }
+            fileUrl = upload.data.url
+          }
+          const res = await createLabReport(patientId, { ...rest, fileUrl })
           setBusy(false)
           if (res.success) {
             notify('Lab report added')
@@ -613,7 +629,18 @@ function PatientDetail() {
         busy={busy}
         onSubmit={async (payload) => {
           setBusy(true)
-          const res = await createDocument(patientId, payload)
+          const { file, ...rest } = payload
+          let fileUrl
+          if (file) {
+            const upload = await uploadPatientFile(patientId, file)
+            if (!upload.success) {
+              setBusy(false)
+              notify(upload.message || 'File upload failed', 'error')
+              return
+            }
+            fileUrl = upload.data.url
+          }
+          const res = await createDocument(patientId, { ...rest, fileUrl })
           setBusy(false)
           if (res.success) {
             notify('Document added')
@@ -852,8 +879,17 @@ function LabRequestModal({ open, onClose, onSubmit, busy }) {
 }
 
 function LabReportModal({ open, onClose, onSubmit, busy, requests }) {
-  const [form, setForm] = useState({ title: '', summary: '', reportText: '', labRequestId: '', reportDate: today() })
+  const [form, setForm] = useState({ title: '', summary: '', reportText: '', labRequestId: '', reportDate: today(), file: null })
+  const [fileError, setFileError] = useState('')
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
+
+  function handleFile(e) {
+    const file = e.target.files?.[0] || null
+    const error = validateUpload(file)
+    setFileError(error)
+    set('file', error ? null : file)
+  }
+
   return (
     <Modal
       open={open}
@@ -863,7 +899,7 @@ function LabReportModal({ open, onClose, onSubmit, busy, requests }) {
       footer={
         <>
           <button className="doc-btn doc-btn-ghost" onClick={onClose} disabled={busy}>Cancel</button>
-          <button className="doc-btn" disabled={busy || !form.title.trim()} onClick={() => onSubmit({ ...form, labRequestId: form.labRequestId || undefined })}>
+          <button className="doc-btn" disabled={busy || !form.title.trim() || Boolean(fileError)} onClick={() => onSubmit({ ...form, labRequestId: form.labRequestId || undefined })}>
             {busy ? 'Saving…' : 'Add report'}
           </button>
         </>
@@ -891,13 +927,26 @@ function LabReportModal({ open, onClose, onSubmit, busy, requests }) {
       <Field label="Report details">
         <textarea rows="4" value={form.reportText} onChange={(e) => set('reportText', e.target.value)} />
       </Field>
+      <Field label="Attach file" hint="JPG, PNG, WEBP, GIF, PDF, TXT, CSV, DOC(X), XLS(X) · up to 10 MB">
+        <input type="file" accept={UPLOAD_ACCEPT} onChange={handleFile} />
+      </Field>
+      {fileError && <Alert>{fileError}</Alert>}
     </Modal>
   )
 }
 
 function DocumentModal({ open, onClose, onSubmit, busy }) {
-  const [form, setForm] = useState({ title: '', category: 'report', notes: '', fileUrl: '' })
+  const [form, setForm] = useState({ title: '', category: 'report', notes: '', file: null })
+  const [fileError, setFileError] = useState('')
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
+
+  function handleFile(e) {
+    const file = e.target.files?.[0] || null
+    const error = validateUpload(file)
+    setFileError(error)
+    set('file', error ? null : file)
+  }
+
   return (
     <Modal
       open={open}
@@ -906,7 +955,7 @@ function DocumentModal({ open, onClose, onSubmit, busy }) {
       footer={
         <>
           <button className="doc-btn doc-btn-ghost" onClick={onClose} disabled={busy}>Cancel</button>
-          <button className="doc-btn" disabled={busy || !form.title.trim()} onClick={() => onSubmit(form)}>
+          <button className="doc-btn" disabled={busy || !form.title.trim() || Boolean(fileError)} onClick={() => onSubmit(form)}>
             {busy ? 'Saving…' : 'Add document'}
           </button>
         </>
@@ -922,9 +971,10 @@ function DocumentModal({ open, onClose, onSubmit, busy }) {
           ))}
         </select>
       </Field>
-      <Field label="File URL / reference" hint="Optional link to the stored document">
-        <input value={form.fileUrl} onChange={(e) => set('fileUrl', e.target.value)} />
+      <Field label="Attach file" hint="JPG, PNG, WEBP, GIF, PDF, TXT, CSV, DOC(X), XLS(X) · up to 10 MB">
+        <input type="file" accept={UPLOAD_ACCEPT} onChange={handleFile} />
       </Field>
+      {fileError && <Alert>{fileError}</Alert>}
       <Field label="Notes">
         <textarea rows="2" value={form.notes} onChange={(e) => set('notes', e.target.value)} />
       </Field>

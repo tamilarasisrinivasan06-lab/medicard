@@ -20,6 +20,7 @@ router.get("/analytics", c.getAnalytics);
 
 // Patients & access
 router.get("/patients", c.listPatients);
+router.get("/patient-access/lookup", c.lookupPatient);
 router.post("/patient-access/request", c.requestPatientAccess);
 router.get("/patient-access/requests", c.listAccessRequests);
 router.get("/patients/:patientId/access", c.getPatientAccess);

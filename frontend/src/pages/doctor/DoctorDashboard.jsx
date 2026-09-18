@@ -1,123 +1,162 @@
+import { useMemo } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
-import { getDoctorDashboard, getAccessRequests } from '../../api'
-import { useAsync, StatCard, Card, Loading, Alert, EmptyState, StatusBadge, formatDate, formatDateTime } from '../../components/doctor/ui'
+import { getDoctorDashboard, getAccessRequests, getDoctorAppointments } from '../../api'
+import { Card, StatCard, Alert, EmptyState, StatusBadge, useAsync, formatTime, formatDate } from '../../components/doctor/ui'
 import {
   PatientsIcon,
-  StethoscopeIcon,
   CalendarIcon,
-  FlaskIcon,
-  RepeatIcon,
-  BellIcon,
-  ChartIcon,
   InboxIcon,
+  RepeatIcon,
   ScanIcon,
   PlusIcon,
+  QrIcon,
+  ClockIcon,
 } from '../../components/doctor/icons'
 
+function isoDate(value) {
+  if (!value) return ''
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toISOString().slice(0, 10)
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="mc-page">
+      <div className="mc-skeleton" style={{ height: 26, width: 280 }} />
+      <div className="mc-skeleton mc-skeleton-block" style={{ height: 180 }} />
+      <div className="doc-stats">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="mc-skeleton mc-skeleton-stat" />
+        ))}
+      </div>
+      <div className="doc-grid doc-grid-2">
+        <div className="mc-skeleton mc-skeleton-block" />
+        <div className="mc-skeleton mc-skeleton-block" />
+      </div>
+    </div>
+  )
+}
+
 function DoctorDashboard() {
-  const { profile } = useOutletContext()
-  const dashboard = useAsync(() => getDoctorDashboard(), [])
+  const { profile } = useOutletContext() || {}
+  const dashboard = useAsync(() => getDoctorDashboard('today'), [])
+  const appointments = useAsync(() => getDoctorAppointments(), [])
   const pendingRequests = useAsync(() => getAccessRequests('pending'), [])
 
-  if (dashboard.loading) return <Loading label="Loading your dashboard…" />
+  const todayAppointments = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    return (appointments.data || [])
+      .filter((a) => isoDate(a.appointmentDate) === today && a.status !== 'cancelled')
+      .sort((a, b) => String(a.appointmentTime || '').localeCompare(String(b.appointmentTime || '')))
+  }, [appointments.data])
+
+  if (dashboard.loading) return <DashboardSkeleton />
 
   const d = dashboard.data || {}
   const requests = pendingRequests.data || []
+  const name = profile?.name || 'Doctor'
+  const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening'
 
   return (
-    <>
-      <div className="doc-page-head">
+    <div className="mc-page">
+      <header className="mc-welcome">
         <div>
-          <h1>Welcome back, {profile?.name || 'Doctor'}</h1>
-          <p>{new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <h1>
+            Welcome back, {name} <span aria-hidden="true">👋</span>
+          </h1>
+          <p>Manage your patients and consultations.</p>
         </div>
-        <div className="doc-page-actions">
-          <Link className="doc-btn doc-btn-ghost" to="/doctor/scan">
-            <ScanIcon size={16} /> Scan Patient Card
-          </Link>
-          <Link className="doc-btn" to="/doctor/patients">
-            <PatientsIcon size={16} /> My Patients
-          </Link>
-        </div>
-      </div>
+      </header>
 
       {dashboard.error && <Alert>{dashboard.error}</Alert>}
 
+      <section className="mc-hero">
+        <div className="mc-hero-body">
+          <span className="mc-hero-icon">
+            <ScanIcon size={26} />
+          </span>
+          <h2>Scan Patient Card</h2>
+          <p>Scan or enter a patient's MediCard ID to securely access their records.</p>
+        </div>
+        <div className="mc-hero-actions">
+          <Link className="doc-btn mc-btn-light" to="/doctor/scan">
+            <QrIcon size={17} /> Scan Patient Card
+          </Link>
+          <Link className="doc-btn mc-btn-outline" to="/doctor/scan">
+            <PlusIcon size={17} /> Enter Patient ID
+          </Link>
+        </div>
+      </section>
+
       <div className="doc-stats">
-        <StatCard icon={<PatientsIcon size={22} />} label="Authorized Patients" value={d.authorizedPatients} hint="Active patient consent" />
-        <StatCard icon={<CalendarIcon size={22} />} label="Appointments Today" value={d.todayAppointments} tone="green" hint={`${d.upcomingAppointments ?? 0} upcoming`} />
-        <StatCard icon={<StethoscopeIcon size={22} />} label="Consultations Today" value={d.todayConsultations} tone="accent" hint={`${d.monthConsultations ?? 0} this month`} />
-        <StatCard icon={<StethoscopeIcon size={22} />} label="Total Consultations" value={d.totalConsultations} hint="All time" />
-        <StatCard icon={<FlaskIcon size={22} />} label="Pending Lab Requests" value={d.pendingLabRequests} tone="amber" hint="Awaiting results" />
-        <StatCard icon={<RepeatIcon size={22} />} label="Follow-ups Due" value={d.followUpsDue} tone="amber" hint="On or before today" />
-        <StatCard icon={<BellIcon size={22} />} label="Unread Notifications" value={d.unreadNotifications} tone="red" />
-        <StatCard icon={<ChartIcon size={22} />} label="This Month" value={d.monthConsultations} tone="green" hint="Consultations" />
+        <StatCard icon={<PatientsIcon size={20} />} label="Today's Patients" value={d.patientsToday} tone="accent" />
+        <StatCard icon={<CalendarIcon size={20} />} label="Appointments" value={d.todayAppointments} tone="green" />
+        <StatCard icon={<InboxIcon size={20} />} label="Pending Requests" value={d.pendingAccessRequests} tone="amber" />
+        <StatCard icon={<RepeatIcon size={20} />} label="Follow-ups" value={d.followUpsDue} tone="red" />
       </div>
 
       <div className="doc-grid doc-grid-2">
         <Card
-          title="Recent Consultations"
-          subtitle="Your latest patient encounters"
+          title="Today's Appointments"
           actions={
-            <Link className="doc-btn doc-btn-ghost doc-btn-sm" to="/doctor/consultations">
+            <Link className="doc-link" to="/doctor/appointments">
               View all
             </Link>
           }
         >
-          {d.recentConsultations && d.recentConsultations.length > 0 ? (
-            <div className="doc-timeline">
-              {d.recentConsultations.map((c) => (
-                <div className="doc-timeline-item" key={c.id}>
-                  <span className="doc-timeline-dot">
-                    <StethoscopeIcon size={16} />
-                  </span>
-                  <div className="doc-timeline-body">
-                    <div className="doc-timeline-head">
-                      <strong>{c.patientName || `Patient #${c.patientId}`}</strong>
-                      <StatusBadge status={c.status} />
-                      <span className="doc-timeline-date">{formatDate(c.consultationDate)}</span>
-                    </div>
-                    <p>{c.title}</p>
-                    {c.diagnosis && <p className="doc-muted">Diagnosis: {c.diagnosis}</p>}
+          {appointments.loading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="mc-skeleton" style={{ height: 44 }} />
+              ))}
+            </div>
+          ) : todayAppointments.length > 0 ? (
+            <div>
+              {todayAppointments.slice(0, 5).map((a) => (
+                <div className="mc-appt" key={a.id}>
+                  <span className="mc-appt-time">{a.appointmentTime ? formatTime(a.appointmentTime) : formatDate(a.appointmentDate)}</span>
+                  <div className="mc-appt-main">
+                    <strong>{a.patientName || `Patient #${a.patientId}`}</strong>
+                    <span>{a.reason || 'General Consultation'}</span>
                   </div>
+                  <StatusBadge status={a.status} />
                 </div>
               ))}
             </div>
           ) : (
-            <EmptyState
-              icon={<StethoscopeIcon size={26} />}
-              title="No consultations yet"
-              message="Consultations you record for your patients will appear here."
-            />
+            <EmptyState icon={<CalendarIcon size={26} />} title="No appointments today" message="Enjoy the calm — nothing scheduled." />
           )}
         </Card>
 
         <Card
-          title="Patient Access Requests"
-          subtitle="Awaiting patient approval"
+          title="Patient Requests"
           actions={
-            <Link className="doc-btn doc-btn-ghost doc-btn-sm" to="/doctor/access-requests">
+            <Link className="doc-link" to="/doctor/access-requests">
               View all
             </Link>
           }
         >
           {pendingRequests.loading ? (
-            <Loading label="Loading requests…" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="mc-skeleton" style={{ height: 44 }} />
+              ))}
+            </div>
           ) : requests.length > 0 ? (
-            <div className="doc-timeline">
+            <div>
               {requests.slice(0, 5).map((r) => (
-                <div className="doc-timeline-item" key={r.id}>
-                  <span className="doc-timeline-dot">
-                    <InboxIcon size={16} />
+                <div className="mc-appt" key={r.id}>
+                  <span className="mc-inline-icon mc-tone-amber">
+                    <InboxIcon size={18} />
                   </span>
-                  <div className="doc-timeline-body">
-                    <div className="doc-timeline-head">
-                      <strong>{r.patientName || 'Patient'}</strong>
-                      <StatusBadge status={r.status} />
-                      <span className="doc-timeline-date">{formatDateTime(r.requestedAt)}</span>
-                    </div>
-                    <p className="doc-muted">{r.medicardId}</p>
+                  <div className="mc-appt-main">
+                    <strong>{r.patientName || 'Patient'}</strong>
+                    <span>{r.medicardId || 'MediCard'}</span>
                   </div>
+                  <Link className="doc-btn doc-btn-sm doc-btn-ghost" to="/doctor/access-requests">
+                    View
+                  </Link>
                 </div>
               ))}
             </div>
@@ -125,7 +164,7 @@ function DoctorDashboard() {
             <EmptyState
               icon={<InboxIcon size={26} />}
               title="No pending requests"
-              message="Request access from a patient's MediCard and it will appear here until they respond."
+              message="New access requests will appear here."
               action={
                 <Link className="doc-btn doc-btn-sm" to="/doctor/scan">
                   <PlusIcon size={15} /> Request access
@@ -135,7 +174,12 @@ function DoctorDashboard() {
           )}
         </Card>
       </div>
-    </>
+
+      <p className="doc-muted" style={{ display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
+        <ClockIcon size={15} /> {greeting} — detailed statistics live in{' '}
+        <Link to="/doctor/analytics">Analytics</Link>.
+      </p>
+    </div>
   )
 }
 

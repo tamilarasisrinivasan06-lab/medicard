@@ -22,6 +22,13 @@ const doctorRoutes = require("./routes/doctorRoutes");
 const hospitalRoutes = require("./routes/hospitalRoutes");
 const prescriptionRoutes = require("./routes/prescriptionRoutes");
 const fileRoutes = require("./routes/fileRoutes");
+const doctorPortalRoutes = require("./routes/doctorPortalRoutes");
+const patientAccessRoutes = require("./routes/patientAccessRoutes");
+const patientPortalRoutes = require("./routes/patientPortalRoutes");
+const pharmacyRoutes = require("./routes/pharmacyRoutes");
+const labPortalRoutes = require("./routes/labPortalRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const superAdminRoutes = require("./routes/superAdminRoutes");
 
 const app = express();
 
@@ -71,6 +78,13 @@ app.use("/api/doctors", doctorRoutes);
 app.use("/api/hospitals", hospitalRoutes);
 app.use("/api/prescriptions", prescriptionRoutes);
 app.use("/api/files", fileRoutes);
+app.use("/api/doctor-portal", doctorPortalRoutes);
+app.use("/api/patient/access", patientAccessRoutes);
+app.use("/api/patient-portal", patientPortalRoutes);
+app.use("/api/pharmacy", pharmacyRoutes);
+app.use("/api/lab-portal", labPortalRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/super-admin", superAdminRoutes);
 
 app.use("/api", (req, res) => {
   res.status(404).json({ success: false, message: "API endpoint not found" });
@@ -94,7 +108,7 @@ app.use((err, req, res, next) => {
   if (err.code === "23503") {
     return res.status(400).json({ success: false, message: "Related record does not exist" });
   }
-  if (err.code === "ECONNREFUSED" || err.code === "57P03" || /connection/i.test(err.message)) {
+  if (err.code === "ECONNREFUSED" || err.code === "ECONNRESET" || err.code === "ETIMEDOUT" || err.code === "EPIPE" || err.code === "57P03" || /connection|database|reset|timeout|pool/i.test(err.message || "")) {
     return res.status(503).json({ success: false, message: "Database connection unavailable" });
   }
   if (err.message && /jwt/i.test(err.message)) {

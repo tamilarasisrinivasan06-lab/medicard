@@ -282,3 +282,93 @@ export function AlertIcon(props) {
     </Svg>
   )
 }
+
+export function CalendarClockIcon(props) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="4" width="18" height="17" rx="2" />
+      <path d="M8 2v4" />
+      <path d="M16 2v4" />
+      <path d="M3 9h18" />
+      <circle cx="15.5" cy="15.5" r="2.5" />
+      <path d="M17 13.5V15l1.5 1" />
+    </Svg>
+  )
+}
+
+export function UserCheckIcon(props) {
+  return (
+    <Svg {...props}>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3.5 20a5.5 5.5 0 0 1 11 0" />
+      <path d="m16 12 2 2 4-4" />
+    </Svg>
+  )
+}
+
+export function FileCheckIcon(props) {
+  return (
+    <Svg {...props}>
+      <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+      <path d="M14 3v5h5" />
+      <path d="m9 15 2 2 4-4" />
+    </Svg>
+  )
+}
+
+export function QrIcon(props) {
+  return (
+    <Svg {...props}>
+      <rect x="3.5" y="3.5" width="6" height="6" rx="1" />
+      <rect x="14.5" y="3.5" width="6" height="6" rx="1" />
+      <rect x="3.5" y="14.5" width="6" height="6" rx="1" />
+      <path d="M14.5 14.5h2.5v2.5h-2.5z" />
+      <path d="M20.5 14.5v2M20.5 20.5h-3M14.5 20.5h.5" />
+    </Svg>
+  )
+}
+
+export function StoreIcon(props) {
+  return (
+    <Svg {...props}>
+      <path d="M4 4h16l1 5a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z" />
+      <path d="M5 9v10.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V9" />
+      <path d="M10 21v-5h4v5" />
+    </Svg>
+  )
+}
+
+export function DropletIcon(props) {
+  return (
+    <Svg {...props}>
+      <path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z" />
+      <path d="M9.5 14.5a3 3 0 0 0 2.5 3" />
+    </Svg>
+  )
+}
+
+export function PhoneIcon(props) {
+  return (
+    <Svg {...props}>
+      <path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5V18a2 2 0 0 1-2 2A14 14 0 0 1 3 6a2 2 0 0 1 2-2z" />
+    </Svg>
+  )
+}
+
+export function ChevronDownIcon(props) {
+  return (
+    <Svg {...props}>
+      <path d="M6 9l6 6 6-6" />
+    </Svg>
+  )
+}
+
+export function MoreIcon(props) {
+  return (
+    <Svg {...props}>
+      <circle cx="5" cy="12" r="1.6" />
+      <circle cx="12" cy="12" r="1.6" />
+      <circle cx="19" cy="12" r="1.6" />
+    </Svg>
+  )
+}

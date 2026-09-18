@@ -991,3 +991,11 @@
   .role-card { min-height: 150px !important; padding: 18px 10px !important; }
   .auth-form { padding: 22px 18px !important; }
 }
+
+/* ==========================================================================
+   App frame / viewport architecture (authoritative last-word layer).
+   The app uses the browser viewport as the application frame:
+   - The app root wrapper never forces extra height on fixed-viewport pages.
+   - Decorative pseudo-elements are clipped, never allowed to overflow.
+   ========================================================================== */
+.medicard-page { min-height: 0 !important; }

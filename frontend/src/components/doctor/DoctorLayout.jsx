@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { getDoctorProfile, getDoctorNotifications, getMe, getRole, getToken, logout } from '../../api'
 import {
   DashboardIcon,
@@ -19,19 +19,21 @@ import {
   BellIcon,
   SettingsIcon,
   ShieldIcon,
-  LogoutIcon,
-  MenuIcon,
-  CloseIcon,
 } from './icons'
 import { ToastProvider } from './ui'
+import AppShell from '../layout/AppShell'
 import './doctor.css'
 
-const NAV = [
+const PRIMARY = [
   { to: '/doctor/dashboard', label: 'Dashboard', icon: DashboardIcon },
   { to: '/doctor/patients', label: 'Patients', icon: PatientsIcon },
   { to: '/doctor/scan', label: 'Scan Patient Card', icon: ScanIcon },
-  { to: '/doctor/access-requests', label: 'Patient Requests', icon: InboxIcon },
   { to: '/doctor/appointments', label: 'Appointments', icon: CalendarIcon },
+  { to: '/doctor/profile', label: 'Profile', icon: UserIcon },
+]
+
+const MORE = [
+  { to: '/doctor/access-requests', label: 'Patient Requests', icon: InboxIcon },
   { to: '/doctor/consultations', label: 'Consultations', icon: StethoscopeIcon },
   { to: '/doctor/prescriptions', label: 'Prescriptions', icon: PillIcon },
   { to: '/doctor/lab-requests', label: 'Lab Requests', icon: FlaskIcon },
@@ -39,8 +41,7 @@ const NAV = [
   { to: '/doctor/documents', label: 'Medical Records', icon: FolderIcon },
   { to: '/doctor/follow-ups', label: 'Follow-ups', icon: RepeatIcon },
   { to: '/doctor/analytics', label: 'Analytics', icon: ChartIcon },
-  { to: '/doctor/hospital', label: 'My Hospital / Clinic', icon: BuildingIcon },
-  { to: '/doctor/profile', label: 'My Profile', icon: UserIcon },
+  { to: '/doctor/hospital', label: 'Hospital / Clinic', icon: BuildingIcon },
   { to: '/doctor/notifications', label: 'Notifications', icon: BellIcon },
   { to: '/doctor/audit', label: 'Audit Log', icon: ShieldIcon },
   { to: '/doctor/settings', label: 'Settings', icon: SettingsIcon },
@@ -53,7 +54,6 @@ function DoctorLayout() {
   const hasToken = Boolean(getToken())
   const [profile, setProfile] = useState(null)
   const [unread, setUnread] = useState(0)
-  const [drawerOpen, setDrawerOpen] = useState(false)
 
   useEffect(() => {
     if (!hasToken || role !== 'doctor') return
@@ -100,69 +100,20 @@ function DoctorLayout() {
 
   return (
     <ToastProvider>
-      <div className="doctor-shell">
-        <aside className={`doc-sidebar ${drawerOpen ? 'is-open' : ''}`}>
-          <div className="doc-brand">
-            <span className="doc-brand-mark">M</span>
-            <div>
-              <strong>MediCard</strong>
-              <span>Doctor Portal</span>
-            </div>
-            <button type="button" className="doc-icon-btn doc-sidebar-close" onClick={() => setDrawerOpen(false)} aria-label="Close menu">
-              <CloseIcon size={18} />
-            </button>
-          </div>
-
-          <nav className="doc-nav">
-            {NAV.map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === '/doctor/dashboard'}
-                className={({ isActive }) => (isActive ? 'is-active' : '')}
-                onClick={() => setDrawerOpen(false)}
-              >
-                <Icon size={18} />
-                <span>{label}</span>
-                {to === '/doctor/notifications' && unread > 0 && <em className="doc-nav-badge">{unread}</em>}
-              </NavLink>
-            ))}
-          </nav>
-
-          <button type="button" className="doc-logout" onClick={handleLogout}>
-            <LogoutIcon size={18} />
-            <span>Logout</span>
-          </button>
-        </aside>
-
-        {drawerOpen && <div className="doc-scrim" onClick={() => setDrawerOpen(false)} />}
-
-        <div className="doc-main">
-          <header className="doc-topbar">
-            <button type="button" className="doc-icon-btn doc-menu-btn" onClick={() => setDrawerOpen(true)} aria-label="Open menu">
-              <MenuIcon size={20} />
-            </button>
-            <div className="doc-topbar-title">
-              <strong>{name}</strong>
-              <span>{meta || 'Doctor'}</span>
-            </div>
-            <div className="doc-topbar-actions">
-              <NavLink to="/doctor/notifications" className="doc-icon-btn doc-bell" aria-label="Notifications">
-                <BellIcon size={20} />
-                {unread > 0 && <em>{unread > 9 ? '9+' : unread}</em>}
-              </NavLink>
-              <NavLink to="/doctor/profile" className="doc-user-chip">
-                <span className="doc-avatar">{(name || 'D').slice(0, 1).toUpperCase()}</span>
-                <span className="doc-user-name">{name}</span>
-              </NavLink>
-            </div>
-          </header>
-
-          <main className="doc-content">
-            <Outlet context={{ profile, unread, setUnread }} />
-          </main>
-        </div>
-      </div>
+      <AppShell
+        portalLabel="Doctor Portal"
+        title={name}
+        subtitle={meta || 'Doctor'}
+        primary={PRIMARY}
+        more={MORE}
+        user={{ name, meta }}
+        unread={unread}
+        notificationsTo="/doctor/notifications"
+        profileTo="/doctor/profile"
+        profileMenu={MORE}
+        onLogout={handleLogout}
+        context={{ profile, unread, setUnread }}
+      />
     </ToastProvider>
   )
 }

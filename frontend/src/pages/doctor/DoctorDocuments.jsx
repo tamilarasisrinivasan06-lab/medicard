@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getDoctorDocuments, getDoctorPatients, createDocument, deleteDocument } from '../../api'
+import { getDoctorDocuments, getDoctorPatients, createDocument, deleteDocument, uploadPatientFile } from '../../api'
 import {
   useAsync,
   useToast,
@@ -12,8 +12,11 @@ import {
   Modal,
   ConfirmDialog,
   Field,
+  FileLink,
   PageHeader,
   formatDate,
+  UPLOAD_ACCEPT,
+  validateUpload,
 } from '../../components/doctor/ui'
 import { FolderIcon, PlusIcon, TrashIcon, SearchIcon } from '../../components/doctor/icons'
 
@@ -38,8 +41,18 @@ function DoctorDocuments() {
 
   async function handleCreate(form) {
     setBusy(true)
-    const { patientId, ...payload } = form
-    const res = await createDocument(patientId, payload)
+    const { patientId, file, ...payload } = form
+    let fileUrl
+    if (file) {
+      const upload = await uploadPatientFile(patientId, file)
+      if (!upload.success) {
+        setBusy(false)
+        notify(upload.message || 'File upload failed', 'error')
+        return
+      }
+      fileUrl = upload.data.url
+    }
+    const res = await createDocument(patientId, { ...payload, fileUrl })
     setBusy(false)
     if (res.success) {
       notify('Document added')
@@ -111,7 +124,7 @@ function DoctorDocuments() {
                       <strong>{d.title}</strong>
                       {d.fileUrl && (
                         <div>
-                          <a className="doc-link" href={d.fileUrl} target="_blank" rel="noreferrer">Open file</a>
+                          <FileLink url={d.fileUrl}>Open file</FileLink>
                         </div>
                       )}
                     </td>
@@ -152,8 +165,16 @@ function DoctorDocuments() {
 }
 
 function NewDocumentModal({ open, onClose, onSubmit, busy, patients }) {
-  const [form, setForm] = useState({ patientId: '', title: '', category: 'report', notes: '', fileUrl: '' })
+  const [form, setForm] = useState({ patientId: '', title: '', category: 'report', notes: '', file: null })
+  const [fileError, setFileError] = useState('')
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
+
+  function handleFile(e) {
+    const file = e.target.files?.[0] || null
+    const error = validateUpload(file)
+    setFileError(error)
+    set('file', error ? null : file)
+  }
 
   return (
     <Modal
@@ -163,7 +184,7 @@ function NewDocumentModal({ open, onClose, onSubmit, busy, patients }) {
       footer={
         <>
           <button className="doc-btn doc-btn-ghost" onClick={onClose} disabled={busy}>Cancel</button>
-          <button className="doc-btn" disabled={busy || !form.patientId || !form.title.trim()} onClick={() => onSubmit(form)}>
+          <button className="doc-btn" disabled={busy || !form.patientId || !form.title.trim() || Boolean(fileError)} onClick={() => onSubmit(form)}>
             {busy ? 'Saving…' : 'Add document'}
           </button>
         </>
@@ -189,9 +210,10 @@ function NewDocumentModal({ open, onClose, onSubmit, busy, patients }) {
           ))}
         </select>
       </Field>
-      <Field label="File URL / reference" hint="Optional link to the stored document">
-        <input value={form.fileUrl} onChange={(e) => set('fileUrl', e.target.value)} />
+      <Field label="Attach file" hint="JPG, PNG, WEBP, GIF, PDF, TXT, CSV, DOC(X), XLS(X) · up to 10 MB">
+        <input type="file" accept={UPLOAD_ACCEPT} onChange={handleFile} />
       </Field>
+      {fileError && <Alert>{fileError}</Alert>}
       <Field label="Notes">
         <textarea rows="2" value={form.notes} onChange={(e) => set('notes', e.target.value)} />
       </Field>

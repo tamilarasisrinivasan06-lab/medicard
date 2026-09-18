@@ -1,32 +1,53 @@
 import { Link } from 'react-router-dom'
-import RoleCard from './RoleCard'
-import { ROLE_ORDER, ROLES } from './roleConfig'
+import PageContainer from './PageContainer'
+import BrandHeader from './BrandHeader'
+import RoleGrid from './RoleGrid'
+import StaffLogin from './StaffLogin'
+import { RoleIcon, ChevronRightIcon } from './roleIcons'
+import { ROLES, PRIMARY_ROLE_KEYS, SECONDARY_ROLE_KEYS } from './roleConfig'
 
 function RoleSelection() {
+  const primaryRoles = PRIMARY_ROLE_KEYS.map((key) => ROLES[key]).filter(Boolean)
+  const secondaryRoles = SECONDARY_ROLE_KEYS.map((key) => ROLES[key]).filter(Boolean)
+
   return (
-    <div className="role-page">
-      <div className="medicard-brand">
-        <span className="medicard-logo brand-logo" aria-hidden="true">
-          M
-        </span>
-        <span className="medicard-brand-name">MediCard</span>
+    <PageContainer>
+      <BrandHeader />
+
+      <div className="authx-hero">
+        <h1>Welcome to MediCard</h1>
+        <p>Choose your portal to continue</p>
       </div>
 
-      <h1 className="role-title">Login</h1>
+      <RoleGrid roles={primaryRoles} />
 
-      <div className="role-grid">
-        {ROLE_ORDER.map((key) => (
-          <RoleCard key={key} config={ROLES[key]} />
-        ))}
-      </div>
+      {secondaryRoles.length > 0 && (
+        <section className="authx-section">
+          <div className="authx-divider">
+            <span>Advanced Access</span>
+          </div>
+          {secondaryRoles.map((config) => (
+            <Link
+              key={config.key}
+              to={`/login/${config.key}`}
+              className="authx-admin"
+              style={{ '--ax-role': config.color, '--ax-role-soft': config.soft }}
+            >
+              <span className="authx-role-icon" aria-hidden="true">
+                <RoleIcon name={config.icon} size={22} />
+              </span>
+              <span className="authx-admin-main">
+                <strong>{config.label}</strong>
+                <span>{config.description}</span>
+              </span>
+              <ChevronRightIcon size={18} className="authx-admin-go" />
+            </Link>
+          ))}
+        </section>
+      )}
 
-      <p className="role-footer-note">
-        Staff login for pharmacists &amp; diagnostic staff?{' '}
-        <Link to="/login/classic" className="role-link">
-          Sign in here
-        </Link>
-      </p>
-    </div>
+      <StaffLogin />
+    </PageContainer>
   )
 }
 

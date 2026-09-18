@@ -1,40 +1,68 @@
-import { Navigate, useParams, Link } from 'react-router-dom'
+import { Navigate, useParams, Link, useSearchParams } from 'react-router-dom'
+import PageContainer from './PageContainer'
+import BrandHeader from './BrandHeader'
 import LoginForm from './LoginForm'
-import { RoleIcon } from './roleIcons'
+import { RoleIcon, ArrowLeftIcon } from './roleIcons'
 import { roleConfigForSlug } from './roleConfig'
+
+const REGISTERABLE_ROLES = ['patient', 'doctor', 'pharmacist', 'diagnostic_staff']
+
+function loginSubtitle(config) {
+  if (config.role === 'super_admin') return 'Login to Super Admin'
+  return `Login to your ${config.label} account`
+}
 
 function RoleLogin() {
   const { role } = useParams()
+  const [searchParams] = useSearchParams()
   const config = roleConfigForSlug(role)
+  const created = searchParams.get('created') === '1'
 
   if (!config) {
     return <Navigate to="/login" replace />
   }
 
+  const canRegister = REGISTERABLE_ROLES.includes(config.role)
+
   return (
-    <div className="role-page">
-      <div className="medicard-brand">
-        <span className="medicard-logo brand-logo" aria-hidden="true">
-          M
-        </span>
-        <span className="medicard-brand-name">MediCard</span>
+    <PageContainer narrow>
+      <Link to="/login" className="authx-back">
+        <ArrowLeftIcon size={16} /> All portals
+      </Link>
+
+      <BrandHeader />
+
+      {created && (
+        <p className="authx-success" role="status">
+          Your {config.label} account was created successfully. Please sign in.
+        </p>
+      )}
+
+      <div className="authx-card">
+        <div className="authx-login-head">
+          <span
+            className="authx-login-icon"
+            style={{ background: config.soft, color: config.color }}
+            aria-hidden="true"
+          >
+            <RoleIcon name={config.icon} size={28} />
+          </span>
+          <div>
+            <h1>{config.label} Login</h1>
+            <p>{loginSubtitle(config)}</p>
+          </div>
+        </div>
+
+        <LoginForm config={config} />
       </div>
 
-      <span className="role-login-icon" style={{ backgroundColor: config.color }} aria-hidden="true">
-        <RoleIcon name={config.icon} size={34} />
-      </span>
-
-      <h1 className="role-title">{config.label} Login</h1>
-
-      <LoginForm config={config} />
-
-      <p className="role-footer-note">
-        New to MediCard?{' '}
-        <Link to="/register" className="role-link">
-          Create a patient account
-        </Link>
-      </p>
-    </div>
+      {canRegister && (
+        <p className="authx-note">
+          New to MediCard?{' '}
+          <Link to={`/register/${config.key}`}>Create a {config.label.toLowerCase()} account</Link>
+        </p>
+      )}
+    </PageContainer>
   )
 }
 

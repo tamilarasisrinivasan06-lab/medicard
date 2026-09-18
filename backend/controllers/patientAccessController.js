@@ -53,7 +53,7 @@ async function getDoctorAccess(req, res, next) {
 async function decideDoctorAccess(req, res, next) {
   try {
     const { accessId } = req.params;
-    const { decision } = req.params;
+    const decision = req.body.decision || req.params.decision;
     if (!isValidId(accessId)) {
       return res.status(400).json({ success: false, message: "Invalid access request ID" });
     }

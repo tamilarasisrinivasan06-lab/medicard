@@ -21,12 +21,46 @@ function isValidDate(value) {
   return !!value && !Number.isNaN(new Date(value).getTime());
 }
 
+async function getDoctorHospitalId(userId) {
+  const doctor = await doctors.getDoctorByUserId(userId);
+  return doctor && doctor.hospitalId ? Number(doctor.hospitalId) : null;
+}
+
+// A doctor may only modify a patient's records while a patient-approved,
+// unexpired access grant exists. This closes the gap where access is revoked
+// or expires but previously created records could still be edited/deleted.
+async function ensureActiveAccess(doctorId, patientId) {
+  await dp.expireStaleAccess();
+  const access = await dp.getActiveAccess(doctorId, patientId);
+  if (!access) {
+    const error = new Error("Active patient authorization is required to access this patient's records");
+    error.expose = true;
+    error.status = 403;
+    throw error;
+  }
+  return access;
+}
+
+// Only accept internal file paths produced by the upload endpoint or absolute
+// http(s) URLs. This prevents javascript:/data: URLs reaching the browser.
+function sanitizeFileUrl(value) {
+  if (value === undefined || value === null) return { ok: true, value: undefined };
+  if (typeof value !== "string") return { ok: false };
+  const trimmed = value.trim();
+  if (!trimmed) return { ok: true, value: undefined };
+  if (trimmed.startsWith("/api/files/") || /^https?:\/\//i.test(trimmed)) {
+    return { ok: true, value: trimmed };
+  }
+  return { ok: false };
+}
+
 // ---------------------------------------------------------------------------
 // Dashboard
 // ---------------------------------------------------------------------------
 async function getDashboard(req, res, next) {
   try {
-    const data = await dp.getDoctorDashboard(req.user.id);
+    const { range } = req.query;
+    const data = await dp.getDoctorDashboard(req.user.id, ["today", "week", "month", "year", "all"].includes(range) ? range : "all");
     return res.json({ success: true, data });
   } catch (error) {
     return next(error);
@@ -46,6 +80,35 @@ async function getAnalytics(req, res, next) {
 // ---------------------------------------------------------------------------
 // Patients & access
 // ---------------------------------------------------------------------------
+async function lookupPatient(req, res, next) {
+  try {
+    const { medicardId, qrPayload } = req.query;
+    let patient = null;
+
+    if (typeof qrPayload === "string" && qrPayload.length > 0) {
+      patient = await patients.getMediCardByQr(qrPayload.trim());
+    } else if (typeof medicardId === "string" && MEDICARD_ID_REGEX.test(medicardId.trim().toUpperCase())) {
+      patient = await patients.getMediCardByMediCardId(medicardId.trim().toUpperCase());
+    }
+
+    if (!patient) {
+      return res.status(404).json({ success: false, message: "MediCard not found" });
+    }
+
+    await audit(req, "patient_lookup", "patient", patient.patient_id, { medicardId: patient.medicard_id });
+    return res.json({
+      success: true,
+      data: {
+        patientName: patient.name || null,
+        medicardId: patient.medicard_id,
+        patientId: patient.patient_id,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 async function listPatients(req, res, next) {
   try {
     const data = await dp.listAuthorizedPatients(req.user.id);
@@ -57,12 +120,17 @@ async function listPatients(req, res, next) {
 
 async function requestPatientAccess(req, res, next) {
   try {
-    const { medicardId, reason } = req.body;
-    if (typeof medicardId !== "string" || !MEDICARD_ID_REGEX.test(medicardId)) {
-      return res.status(400).json({ success: false, message: "Invalid MediCard ID" });
+    const { medicardId: rawMedicardId, qrPayload, reason } = req.body;
+    let medicardId = typeof rawMedicardId === "string" ? rawMedicardId.trim().toUpperCase() : "";
+    let patient = null;
+
+    if (MEDICARD_ID_REGEX.test(medicardId)) {
+      patient = await patients.getMediCardByMediCardId(medicardId);
+    } else if (typeof qrPayload === "string" && qrPayload.length > 0) {
+      patient = await patients.getMediCardByQr(qrPayload.trim());
+      medicardId = patient ? patient.medicard_id : "";
     }
 
-    const patient = await patients.getMediCardByMediCardId(medicardId);
     if (!patient) {
       return res.status(404).json({ success: false, message: "MediCard not found" });
     }
@@ -90,7 +158,7 @@ async function requestPatientAccess(req, res, next) {
         type: "access_request",
         title: `${req.user.fullName} requested access to your health records`,
         body: `Reason: ${access.reason || "Medical care"}`,
-        link: "/patient/notifications",
+        link: "/patient/access",
       });
     }
     await audit(req, "access_requested", "patient", patient.patient_id, { medicardId, accessId: access.id });
@@ -150,7 +218,7 @@ async function revokePatientAccess(req, res, next) {
         type: "access_revoked",
         title: `${req.user.fullName} ended access to your health records`,
         body: updated.reason || null,
-        link: "/patient/notifications",
+        link: "/patient/access",
       });
     }
     await audit(req, "access_revoked", "patient", Number(patientId), { accessId: access.id });
@@ -265,6 +333,7 @@ async function updateConsultation(req, res, next) {
     if (!existing || existing.doctorId !== req.user.id) {
       return res.status(404).json({ success: false, message: "Consultation not found" });
     }
+    await ensureActiveAccess(req.user.id, existing.patientId);
     const data = await dp.updateConsultation(existing.id, req.body);
     await audit(req, "consultation_updated", "consultation", existing.id, {});
     return res.json({ success: true, message: "Consultation updated", data });
@@ -283,6 +352,7 @@ async function deleteConsultation(req, res, next) {
     if (!existing || existing.doctorId !== req.user.id) {
       return res.status(404).json({ success: false, message: "Consultation not found" });
     }
+    await ensureActiveAccess(req.user.id, existing.patientId);
     await dp.deleteConsultation(existing.id);
     await audit(req, "consultation_deleted", "consultation", existing.id, {});
     return res.json({ success: true, message: "Consultation deleted" });
@@ -316,6 +386,7 @@ async function createLabRequest(req, res, next) {
       instructions: typeof instructions === "string" ? instructions : undefined,
       priority: dp.LAB_PRIORITIES.includes(priority) ? priority : "routine",
       consultationId: isValidId(consultationId) ? Number(consultationId) : null,
+      hospitalId: await getDoctorHospitalId(req.user.id),
     });
 
     const patient = await patients.getPatientById(Number(patientId));
@@ -360,6 +431,7 @@ async function updateLabRequestStatus(req, res, next) {
     if (!existing || existing.doctorId !== req.user.id) {
       return res.status(404).json({ success: false, message: "Lab request not found" });
     }
+    await ensureActiveAccess(req.user.id, existing.patientId);
     const data = await dp.updateLabRequestStatus(existing.id, status);
     return res.json({ success: true, message: "Lab request updated", data });
   } catch (error) {
@@ -377,6 +449,10 @@ async function createLabReport(req, res, next) {
     if (typeof title !== "string" || title.trim().length === 0) {
       return res.status(400).json({ success: false, message: "Report title is required" });
     }
+    const safeFile = sanitizeFileUrl(fileUrl);
+    if (!safeFile.ok) {
+      return res.status(400).json({ success: false, message: "Invalid file reference" });
+    }
 
     const data = await dp.createLabReport({
       patientId: Number(patientId),
@@ -385,7 +461,7 @@ async function createLabReport(req, res, next) {
       title: title.trim(),
       summary: typeof summary === "string" ? summary : undefined,
       reportText: typeof reportText === "string" ? reportText : undefined,
-      fileUrl: typeof fileUrl === "string" ? fileUrl : undefined,
+      fileUrl: safeFile.value,
       reportDate: isValidDate(reportDate) ? new Date(reportDate) : undefined,
     });
 
@@ -432,13 +508,17 @@ async function createDocument(req, res, next) {
     if (typeof title !== "string" || title.trim().length === 0) {
       return res.status(400).json({ success: false, message: "Document title is required" });
     }
+    const safeFile = sanitizeFileUrl(fileUrl);
+    if (!safeFile.ok) {
+      return res.status(400).json({ success: false, message: "Invalid file reference" });
+    }
     const data = await dp.createDocument({
       patientId: Number(patientId),
       doctorId: req.user.id,
       title: title.trim(),
       category,
       notes: typeof notes === "string" ? notes : undefined,
-      fileUrl: typeof fileUrl === "string" ? fileUrl : undefined,
+      fileUrl: safeFile.value,
     });
     await audit(req, "document_created", "document", data.id, { patientId: Number(patientId) });
     return res.status(201).json({ success: true, message: "Document added", data });
@@ -467,6 +547,7 @@ async function deleteDocument(req, res, next) {
     if (!existing || existing.doctorId !== req.user.id) {
       return res.status(404).json({ success: false, message: "Document not found" });
     }
+    await ensureActiveAccess(req.user.id, existing.patientId);
     await dp.deleteDocument(existing.id);
     await audit(req, "document_deleted", "document", existing.id, {});
     return res.json({ success: true, message: "Document deleted" });
@@ -537,6 +618,7 @@ async function updateFollowUpStatus(req, res, next) {
     if (!existing || existing.doctorId !== req.user.id) {
       return res.status(404).json({ success: false, message: "Follow-up not found" });
     }
+    await ensureActiveAccess(req.user.id, existing.patientId);
     const data = await dp.updateFollowUpStatus(existing.id, status);
     return res.json({ success: true, message: "Follow-up updated", data });
   } catch (error) {
@@ -619,6 +701,7 @@ async function getAuditLogs(req, res, next) {
 module.exports = {
   getDashboard,
   getAnalytics,
+  lookupPatient,
   listPatients,
   requestPatientAccess,
   listAccessRequests,

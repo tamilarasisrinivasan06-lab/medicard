@@ -103,6 +103,17 @@ export function ArrowLeftIcon({ size }) {
   )
 }
 
+export function BadgeIcon({ size }) {
+  return (
+    <Icon size={size}>
+      <rect x="3" y="5" width="18" height="14" rx="3" />
+      <circle cx="9" cy="11" r="2" />
+      <path d="M5.5 16a3.5 3.5 0 0 1 7 0" />
+      <path d="M14 9.5h4M14 12.5h4M14 15.5h2" />
+    </Icon>
+  )
+}
+
 export function LockIcon({ size }) {
   return (
     <Icon size={size}>
@@ -122,12 +133,33 @@ export function LogoutIcon({ size }) {
   )
 }
 
+export function PharmacyIcon({ size }) {
+  return (
+    <Icon size={size}>
+      <path d="M10.5 20.5 3.5 13.5a5 5 0 0 1 7-7l7 7a5 5 0 0 1-7 7z" />
+      <path d="m8.5 8.5 7 7" />
+    </Icon>
+  )
+}
+
+export function LabIcon({ size }) {
+  return (
+    <Icon size={size}>
+      <path d="M9 3h6" />
+      <path d="M10 3v6.5L5.5 17a2 2 0 0 0 1.7 3h9.6a2 2 0 0 0 1.7-3L14 9.5V3" />
+      <path d="M7.5 15h9" />
+    </Icon>
+  )
+}
+
 const ICONS = {
   patient: PatientIcon,
   doctor: DoctorIcon,
   hospital: HospitalIcon,
   admin: AdminIcon,
   crown: CrownIcon,
+  pharmacy: PharmacyIcon,
+  lab: LabIcon,
 }
 
 export function RoleIcon({ name, size }) {

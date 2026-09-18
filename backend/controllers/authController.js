@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const pool = require("../db/pool");
-const { getDBStatus } = require("../db/status");
+const { getDBStatus, setDBStatus } = require("../db/status");
 const users = require("../db/queries/users");
 const patients = require("../db/queries/patients");
 const doctors = require("../db/queries/doctors");
@@ -9,20 +9,37 @@ const { signToken, blacklistToken } = require("../middleware/authMiddleware");
 
 const ROLES = ["patient", "doctor", "hospital", "admin", "pharmacist", "diagnostic_staff"];
 
-function assertDB() {
+function isConnectionError(error) {
+  return (
+    error.code === "ECONNREFUSED" ||
+    error.code === "ECONNRESET" ||
+    error.code === "ETIMEDOUT" ||
+    error.code === "EPIPE" ||
+    error.code === "57P03" ||
+    error.status === 503 ||
+    /connection|database|reset|timeout|pool/i.test(error.message || "")
+  );
+}
+
+async function assertDB() {
   if (getDBStatus() !== "connected") {
-    const error = new Error("Database connection unavailable");
-    error.expose = true;
-    error.status = 503;
-    throw error;
+    try {
+      await pool.query("SELECT 1");
+      setDBStatus(true);
+    } catch {
+      const error = new Error("Database connection unavailable");
+      error.expose = true;
+      error.status = 503;
+      throw error;
+    }
   }
 }
 
 async function register(req, res, next) {
   try {
-    assertDB();
+    await assertDB();
 
-    const { fullName, name, phone, password, role, dateOfBirth, gender } = req.body;
+    const { fullName, name, phone, password, role, dateOfBirth, gender, specialization, qualification, experience } = req.body;
     const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
 
     if (!fullName && !name) {
@@ -62,7 +79,16 @@ async function register(req, res, next) {
         const profile = await patients.createPatientProfile(createdUser.id, { client });
         createdUser.profile = profile;
       } else if (role === "doctor") {
-        await doctors.createDoctor(createdUser.id, {}, client);
+        const experienceYears = experience !== undefined && experience !== null && experience !== "" ? Number(experience) : null;
+        await doctors.createDoctor(
+          createdUser.id,
+          {
+            specialization: specialization || null,
+            qualification: qualification || null,
+            experience: Number.isFinite(experienceYears) && experienceYears >= 0 ? experienceYears : null,
+          },
+          client
+        );
       }
 
       await client.query("COMMIT");
@@ -84,7 +110,7 @@ async function register(req, res, next) {
     });
   } catch (error) {
     console.error("Registration failed:", error.message);
-    if (error.code === "ECONNREFUSED" || error.code === "57P03" || error.status === 503 || /connection|database/i.test(error.message)) {
+    if (isConnectionError(error)) {
       return res.status(503).json({ success: false, message: "Unable to create your account right now. Please try again." });
     }
     return next(error);
@@ -93,7 +119,7 @@ async function register(req, res, next) {
 
 async function login(req, res, next) {
   try {
-    assertDB();
+    await assertDB();
 
     const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
     const { password, role: requestedRole } = req.body;
@@ -118,7 +144,7 @@ async function login(req, res, next) {
     });
   } catch (error) {
     console.error("Login failed:", error.message);
-    if (error.code === "ECONNREFUSED" || error.code === "57P03" || error.status === 503 || /connection|database/i.test(error.message)) {
+    if (isConnectionError(error)) {
       return res.status(503).json({ success: false, message: "Unable to sign in right now. Please try again." });
     }
     return next(error);

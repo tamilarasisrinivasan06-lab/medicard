@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const files = require("../db/queries/files");
 const patients = require("../db/queries/patients");
 const records = require("../db/queries/records");
+const dp = require("../db/queries/doctorPortal");
 
 const { getOwnPatientId } = require("./recordController");
 
@@ -68,13 +69,22 @@ async function uploadFile(req, res, next) {
       }
       targetPatientId = own;
     } else if (req.user.role === "doctor") {
-      if (!req.access) {
-        return res.status(403).json({ success: false, message: "Access authorization required" });
+      if (req.access) {
+        // Legacy short-lived access-grant flow.
+        if (targetPatientId && targetPatientId !== req.access.grant.patientId) {
+          return res.status(403).json({ success: false, message: "You are not authorized to upload for this patient" });
+        }
+        targetPatientId = req.access.grant.patientId;
+      } else {
+        // Doctor portal consent flow: require an active patient-approved grant.
+        if (!targetPatientId) {
+          return res.status(400).json({ success: false, message: "patientId is required" });
+        }
+        const access = await dp.getActiveAccess(req.user.id, targetPatientId);
+        if (!access) {
+          return res.status(403).json({ success: false, message: "Active patient authorization is required to upload files" });
+        }
       }
-      if (targetPatientId && targetPatientId !== req.access.grant.patientId) {
-        return res.status(403).json({ success: false, message: "You are not authorized to upload for this patient" });
-      }
-      targetPatientId = req.access.grant.patientId;
     } else if (req.user.role === "hospital" || req.user.role === "admin") {
       if (!targetPatientId) {
         return res.status(400).json({ success: false, message: "patientId is required" });
@@ -129,8 +139,12 @@ async function canAccessFile(file, req) {
     const own = await getOwnPatientId(req.user.id);
     return file.patientId === own;
   }
-  if (req.user.role === "doctor" && req.access) {
-    return file.patientId === req.access.grant.patientId;
+  if (req.user.role === "doctor") {
+    if (req.access && file.patientId === req.access.grant.patientId) return true;
+    if (!file.patientId) return false;
+    // Consent-based doctor portal access.
+    const access = await dp.getActiveAccess(req.user.id, file.patientId);
+    return Boolean(access);
   }
   if (req.user.role === "hospital") return true;
   return false;

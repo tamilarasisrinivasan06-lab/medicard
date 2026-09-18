@@ -98,26 +98,26 @@ async function getPatientById(patientId) {
 
 async function getMediCardByQr(qrPayload) {
   const { rows } = await pool.query(
-    `SELECT m.medicard_id, m.patient_id, u.full_name AS name
+    `SELECT m.medicard_id, m.patient_id, u.id AS user_id, u.full_name AS name
      FROM medicards m
      JOIN patient_profiles p ON p.id = m.patient_id
      JOIN users u ON u.id = p.user_id
      WHERE m.qr_code_data = $1`,
     [qrPayload]
   );
-  return rows[0] ? normalizeRow(rows[0], ["patient_id"]) : null;
+  return rows[0] ? normalizeRow(rows[0], ["patient_id", "user_id"]) : null;
 }
 
 async function getMediCardByMediCardId(medicardId) {
   const { rows } = await pool.query(
-    `SELECT m.medicard_id, m.patient_id, u.full_name AS name
+    `SELECT m.medicard_id, m.patient_id, u.id AS user_id, u.full_name AS name
      FROM medicards m
      JOIN patient_profiles p ON p.id = m.patient_id
      JOIN users u ON u.id = p.user_id
      WHERE m.medicard_id = $1`,
     [medicardId]
   );
-  return rows[0] ? normalizeRow(rows[0], ["patient_id"]) : null;
+  return rows[0] ? normalizeRow(rows[0], ["patient_id", "user_id"]) : null;
 }
 
 async function getQrDataByUserId(userId) {

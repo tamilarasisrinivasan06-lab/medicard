@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getPatientRecords, getSavedAccess, getToken, getRole, clearSavedAccess } from '../api'
+import FileLink from '../components/FileLink'
 
 function DoctorPatientRecords() {
   const { patientId } = useParams()
@@ -77,9 +78,7 @@ function DoctorPatientRecords() {
               {record.hospitalName && <p><strong>Hospital:</strong> {record.hospitalName}</p>}
               {record.hasFile && record.fileUrl && (
                 <p>
-                  <a href={`http://localhost:5000${record.fileUrl}`} target="_blank" rel="noreferrer">
-                    View attachment
-                  </a>
+                  <FileLink url={record.fileUrl} />
                 </p>
               )}
             </div>

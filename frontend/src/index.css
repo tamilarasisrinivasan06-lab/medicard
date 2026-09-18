@@ -12,8 +12,8 @@
   --accent-border: #93c5fd;
   --shadow: 0 20px 50px rgba(30, 58, 138, 0.1);
   --shadow-soft: 0 8px 24px rgba(37, 99, 235, 0.09);
-  --sans: 'Avenir Next', 'Segoe UI', sans-serif;
-  --heading: 'Avenir Next', 'Segoe UI', sans-serif;
+  --sans: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --heading: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
   font: 16px/1.55 var(--sans);
   letter-spacing: 0;
@@ -25,8 +25,14 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html,
 body {
+  height: 100%;
   margin: 0;
+}
+
+body {
+  overflow-x: clip;
 }
 
 img {
@@ -45,7 +51,7 @@ button {
   line-height: inherit;
 }
 
-#root { min-height: 100svh; }
+#root { min-height: 100%; }
 
 h1,
 h2 {

@@ -323,8 +323,8 @@ function toPublicLabRequest(row) {
 
 async function createLabRequest(fields) {
   const { rows } = await pool.query(
-    `INSERT INTO lab_requests (patient_id, doctor_id, consultation_id, title, tests, instructions, priority)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    `INSERT INTO lab_requests (patient_id, doctor_id, consultation_id, title, tests, instructions, priority, hospital_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
     [
       fields.patientId,
       fields.doctorId,
@@ -333,6 +333,7 @@ async function createLabRequest(fields) {
       fields.tests,
       fields.instructions || null,
       fields.priority || "routine",
+      fields.hospitalId || null,
     ]
   );
   return toPublicLabRequest(rows[0]);
@@ -561,51 +562,118 @@ async function updateFollowUpStatus(id, status) {
 // ---------------------------------------------------------------------------
 // dashboard & analytics
 // ---------------------------------------------------------------------------
-async function getDoctorDashboard(doctorUserId) {
+async function getDoctorDashboard(doctorUserId, range = "all") {
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
   const startOfMonth = new Date(startOfDay.getFullYear(), startOfDay.getMonth(), 1);
+  const startOfYear = new Date(startOfDay.getFullYear(), 0, 1);
 
-  const [patients, consultationsTotal, consultationsToday, consultationsMonth, apptsToday, apptsUpcoming, labPending, followUpsDue, unread] =
-    await Promise.all([
-      pool.query(
-        `SELECT COUNT(*)::int AS count FROM doctor_patient_access
-         WHERE doctor_id = $1 AND status = 'accepted' AND expires_at > now()`,
-        [doctorUserId]
-      ),
-      pool.query("SELECT COUNT(*)::int AS count FROM consultations WHERE doctor_id = $1", [doctorUserId]),
-      pool.query(
-        "SELECT COUNT(*)::int AS count FROM consultations WHERE doctor_id = $1 AND consultation_date >= $2 AND consultation_date < $3",
-        [doctorUserId, startOfDay, endOfDay]
-      ),
-      pool.query(
-        "SELECT COUNT(*)::int AS count FROM consultations WHERE doctor_id = $1 AND consultation_date >= $2",
-        [doctorUserId, startOfMonth]
-      ),
-      pool.query(
-        `SELECT COUNT(*)::int AS count FROM appointments a JOIN doctors d ON d.id = a.doctor_id
-         WHERE d.user_id = $1 AND a.appointment_date = $2 AND a.status IN ('scheduled','confirmed')`,
-        [doctorUserId, startOfDay]
-      ),
-      pool.query(
-        `SELECT COUNT(*)::int AS count FROM appointments a JOIN doctors d ON d.id = a.doctor_id
-         WHERE d.user_id = $1 AND a.appointment_date >= $2 AND a.status IN ('scheduled','confirmed')`,
-        [doctorUserId, startOfDay]
-      ),
-      pool.query(
-        "SELECT COUNT(*)::int AS count FROM lab_requests WHERE doctor_id = $1 AND status = 'requested'",
-        [doctorUserId]
-      ),
-      pool.query(
-        "SELECT COUNT(*)::int AS count FROM follow_ups WHERE doctor_id = $1 AND status = 'scheduled' AND follow_up_date <= CURRENT_DATE",
-        [doctorUserId]
-      ),
-      pool.query(
-        "SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1 AND is_read = false",
-        [doctorUserId]
-      ),
-    ]);
+  const rangeStartByKey = {
+    today: startOfDay,
+    week: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+    month: startOfMonth,
+    year: startOfYear,
+    all: null,
+  };
+  const rangeStart = rangeStartByKey[range] !== undefined ? rangeStartByKey[range] : null;
+
+  const rangeFilter = rangeStart
+    ? "AND consultation_date >= $2 AND consultation_date < $3"
+    : "";
+  const rangeParams = rangeStart ? [doctorUserId, rangeStart, endOfDay] : [doctorUserId];
+
+  const [
+    patients,
+    consultationsTotal,
+    consultationsToday,
+    consultationsMonth,
+    patientsToday,
+    patientsMonth,
+    patientsYear,
+    patientsInRange,
+    consultationsInRange,
+    apptsToday,
+    apptsUpcoming,
+    labPending,
+    labReportsAvailable,
+    followUpsDue,
+    pendingRequests,
+    unread,
+  ] = await Promise.all([
+    pool.query(
+      `SELECT COUNT(*)::int AS count FROM doctor_patient_access
+       WHERE doctor_id = $1 AND status = 'accepted' AND expires_at > now()`,
+      [doctorUserId]
+    ),
+    pool.query("SELECT COUNT(*)::int AS count FROM consultations WHERE doctor_id = $1", [doctorUserId]),
+    pool.query(
+      "SELECT COUNT(*)::int AS count FROM consultations WHERE doctor_id = $1 AND consultation_date >= $2 AND consultation_date < $3",
+      [doctorUserId, startOfDay, endOfDay]
+    ),
+    pool.query(
+      "SELECT COUNT(*)::int AS count FROM consultations WHERE doctor_id = $1 AND consultation_date >= $2",
+      [doctorUserId, startOfMonth]
+    ),
+    pool.query(
+      `SELECT COUNT(DISTINCT patient_id)::int AS count FROM consultations
+       WHERE doctor_id = $1 AND consultation_date >= $2 AND consultation_date < $3`,
+      [doctorUserId, startOfDay, endOfDay]
+    ),
+    pool.query(
+      `SELECT COUNT(DISTINCT patient_id)::int AS count FROM consultations
+       WHERE doctor_id = $1 AND consultation_date >= $2`,
+      [doctorUserId, startOfMonth]
+    ),
+    pool.query(
+      `SELECT COUNT(DISTINCT patient_id)::int AS count FROM consultations
+       WHERE doctor_id = $1 AND consultation_date >= $2`,
+      [doctorUserId, startOfYear]
+    ),
+    pool.query(
+      `SELECT COUNT(DISTINCT patient_id)::int AS count FROM consultations
+       WHERE doctor_id = $1 ${rangeFilter}`,
+      rangeParams
+    ),
+    pool.query(
+      `SELECT COUNT(*)::int AS count FROM consultations
+       WHERE doctor_id = $1 ${rangeFilter}`,
+      rangeParams
+    ),
+    pool.query(
+      `SELECT COUNT(*)::int AS count FROM appointments a JOIN doctors d ON d.id = a.doctor_id
+       WHERE d.user_id = $1 AND a.appointment_date = $2 AND a.status IN ('scheduled','confirmed')`,
+      [doctorUserId, startOfDay]
+    ),
+    pool.query(
+      `SELECT COUNT(*)::int AS count FROM appointments a JOIN doctors d ON d.id = a.doctor_id
+       WHERE d.user_id = $1 AND a.appointment_date >= $2 AND a.status IN ('scheduled','confirmed')`,
+      [doctorUserId, startOfDay]
+    ),
+    pool.query(
+      "SELECT COUNT(*)::int AS count FROM lab_requests WHERE doctor_id = $1 AND status = 'requested'",
+      [doctorUserId]
+    ),
+    pool.query(
+      `SELECT COUNT(*)::int AS count FROM lab_reports r
+       LEFT JOIN lab_requests lr ON lr.id = r.lab_request_id
+       WHERE r.doctor_id = $1 AND (lr.status = 'ready' OR lr.status IS NULL)`,
+      [doctorUserId]
+    ),
+    pool.query(
+      "SELECT COUNT(*)::int AS count FROM follow_ups WHERE doctor_id = $1 AND status = 'scheduled' AND follow_up_date <= CURRENT_DATE",
+      [doctorUserId]
+    ),
+    pool.query(
+      `SELECT COUNT(*)::int AS count FROM doctor_patient_access
+       WHERE doctor_id = $1 AND status = 'pending'`,
+      [doctorUserId]
+    ),
+    pool.query(
+      "SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1 AND is_read = false",
+      [doctorUserId]
+    ),
+  ]);
 
   const recentRes = await pool.query(
     `SELECT c.*, u.full_name AS patient_name
@@ -618,14 +686,23 @@ async function getDoctorDashboard(doctorUserId) {
   );
 
   return {
+    range,
     authorizedPatients: patients.rows[0].count,
+    totalPatients: patients.rows[0].count,
+    patientsToday: patientsToday.rows[0].count,
+    patientsMonth: patientsMonth.rows[0].count,
+    patientsYear: patientsYear.rows[0].count,
+    patientsInRange: patientsInRange.rows[0].count,
+    consultationsInRange: consultationsInRange.rows[0].count,
     totalConsultations: consultationsTotal.rows[0].count,
     todayConsultations: consultationsToday.rows[0].count,
     monthConsultations: consultationsMonth.rows[0].count,
     todayAppointments: apptsToday.rows[0].count,
     upcomingAppointments: apptsUpcoming.rows[0].count,
     pendingLabRequests: labPending.rows[0].count,
+    labReportsAvailable: labReportsAvailable.rows[0].count,
     followUpsDue: followUpsDue.rows[0].count,
+    pendingAccessRequests: pendingRequests.rows[0].count,
     unreadNotifications: unread.rows[0].count,
     recentConsultations: recentRes.rows.map((r) => ({ ...toPublicConsultation(r), patientName: r.patient_name })),
   };

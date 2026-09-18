@@ -1,5 +1,6 @@
 /* oxlint-disable react/only-export-components -- shared UI kit also exports formatting helpers and hooks */
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { fetchFileObjectUrl } from '../../api'
 import { CloseIcon, AlertIcon, InboxIcon } from './icons'
 
 export function formatDate(value) {
@@ -91,6 +92,62 @@ export function Alert({ tone = 'error', children }) {
       <AlertIcon size={18} />
       <span>{children}</span>
     </div>
+  )
+}
+
+export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+
+export const ALLOWED_UPLOAD_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'application/pdf',
+  'text/plain',
+  'text/csv',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+]
+
+export const UPLOAD_ACCEPT =
+  '.jpg,.jpeg,.png,.webp,.gif,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx'
+
+export function validateUpload(file) {
+  if (!file) return ''
+  if (!ALLOWED_UPLOAD_TYPES.includes(file.type)) {
+    return 'Unsupported file type. Allowed: JPG, PNG, WEBP, GIF, PDF, TXT, CSV, DOC, DOCX, XLS, XLSX.'
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return `File exceeds the ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB size limit`
+  }
+  return ''
+}
+
+export function FileLink({ url, children = 'Open file', className = 'doc-link' }) {
+  const { notify } = useToast()
+  const [busy, setBusy] = useState(false)
+  if (!url) return null
+
+  async function handleOpen(event) {
+    event.preventDefault()
+    setBusy(true)
+    try {
+      const objectUrl = await fetchFileObjectUrl(url)
+      window.open(objectUrl, '_blank', 'noopener,noreferrer')
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60000)
+    } catch (err) {
+      notify(err.message || 'Could not open the file', 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <button type="button" className={className} onClick={handleOpen} disabled={busy}>
+      {busy ? 'Opening…' : children}
+    </button>
   )
 }
 

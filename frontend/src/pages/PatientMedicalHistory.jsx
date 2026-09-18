@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { getMyRecords, uploadMedicalFile, getToken } from '../api'
+import FileLink from '../components/FileLink'
 
 function formatDate(value) {
   if (!value) return '—'
@@ -27,7 +28,11 @@ function PatientMedicalHistory() {
       .then((result) => {
         if (result.success) {
           setRecords(result.data)
-        } else if (result.message === 'Invalid or expired token' || result.message === 'Authentication required') {
+        } else if (
+          result.message === 'Invalid or expired token' ||
+          result.message === 'Authentication required' ||
+          result.message === 'Session expired. Please log in again.'
+        ) {
           localStorage.removeItem('token')
           localStorage.removeItem('role')
           navigate('/login')
@@ -90,9 +95,7 @@ function PatientMedicalHistory() {
               {record.hospitalName && <p><strong>Hospital:</strong> {record.hospitalName}</p>}
               {record.hasFile && record.fileUrl && (
                 <p>
-                  <a href={`http://localhost:5000${record.fileUrl}`} target="_blank" rel="noreferrer">
-                    View attachment
-                  </a>
+                  <FileLink url={record.fileUrl} />
                 </p>
               )}
             </div>

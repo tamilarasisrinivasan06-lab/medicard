@@ -1,6 +1,6 @@
 function LoadingButton({ type = 'submit', loading = false, disabled = false, children, loadingText }) {
   return (
-    <button type={type} disabled={disabled || loading} aria-busy={loading}>
+    <button type={type} className="authx-submit" disabled={disabled || loading} aria-busy={loading}>
       {loading ? loadingText || 'Loading…' : children}
     </button>
   )

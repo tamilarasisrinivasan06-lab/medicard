@@ -15,8 +15,9 @@ function validateDate(value, label) {
 
 async function createPrescription(req, res, next) {
   try {
-    const { patientId, appointmentId, diagnosis, notes, prescriptionDate, items } = req.body;
+    const { appointmentId, diagnosis, notes, prescriptionDate, items } = req.body;
 
+    const patientId = req.params.patientId ?? req.body.patientId;
     if (!isValidId(patientId)) return res.status(400).json({ success: false, message: "Valid patientId is required" });
     const patient = await patients.getPatientById(Number(patientId));
     if (!patient) return res.status(404).json({ success: false, message: "Patient not found" });

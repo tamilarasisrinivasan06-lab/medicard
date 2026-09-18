@@ -47,8 +47,8 @@ function LoginForm({ config }) {
   }
 
   return (
-    <form className="auth-form role-login-form" onSubmit={handleSubmit} noValidate>
-      <div className="role-field">
+    <form className="authx-form" onSubmit={handleSubmit} noValidate>
+      <div className="authx-field">
         <label htmlFor={`login-id-${config.key}`}>{config.idLabel}</label>
         <input
           id={`login-id-${config.key}`}
@@ -63,10 +63,10 @@ function LoginForm({ config }) {
           onBlur={() => setTouched((t) => ({ ...t, id: true }))}
           autoComplete="username"
         />
-        {touched.id && idError && <p className="role-field-error">{idError}</p>}
+        {touched.id && idError && <p className="authx-field-error">{idError}</p>}
       </div>
 
-      <div className="role-field">
+      <div className="authx-field">
         <label htmlFor={`login-password-${config.key}`}>Password</label>
         <PasswordInput
           id={`login-password-${config.key}`}
@@ -80,13 +80,13 @@ function LoginForm({ config }) {
           onBlur={() => setTouched((t) => ({ ...t, password: true }))}
           autoComplete="current-password"
         />
-        {touched.password && passwordError && <p className="role-field-error">{passwordError}</p>}
+        {touched.password && passwordError && <p className="authx-field-error">{passwordError}</p>}
       </div>
 
       <AuthError message={error} />
 
-      <div className="role-login-row">
-        <label className="role-checkbox">
+      <div className="authx-row">
+        <label className="authx-check">
           <input
             type="checkbox"
             checked={remember}
@@ -94,7 +94,7 @@ function LoginForm({ config }) {
           />
           Remember me
         </label>
-        <Link to="/forgot-password" className="role-link">
+        <Link to="/forgot-password" className="authx-link">
           Forgot Password?
         </Link>
       </div>
@@ -103,7 +103,7 @@ function LoginForm({ config }) {
         Login
       </LoadingButton>
 
-      <Link to="/login" className="role-change-link">
+      <Link to="/login" className="authx-change">
         <ArrowLeftIcon size={16} /> Change Role
       </Link>
     </form>
