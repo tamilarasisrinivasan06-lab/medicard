@@ -24,10 +24,10 @@ const prescriptionRoutes = require("./routes/prescriptionRoutes");
 const fileRoutes = require("./routes/fileRoutes");
 const doctorPortalRoutes = require("./routes/doctorPortalRoutes");
 const patientAccessRoutes = require("./routes/patientAccessRoutes");
-const patientPortalRoutes = require("./routes/patientPortalRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 const pharmacyRoutes = require("./routes/pharmacyRoutes");
 const labPortalRoutes = require("./routes/labPortalRoutes");
-const adminRoutes = require("./routes/adminRoutes");
+const patientPortalRoutes = require("./routes/patientPortalRoutes");
 const superAdminRoutes = require("./routes/superAdminRoutes");
 
 const app = express();
@@ -80,10 +80,10 @@ app.use("/api/prescriptions", prescriptionRoutes);
 app.use("/api/files", fileRoutes);
 app.use("/api/doctor-portal", doctorPortalRoutes);
 app.use("/api/patient/access", patientAccessRoutes);
-app.use("/api/patient-portal", patientPortalRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/pharmacy", pharmacyRoutes);
 app.use("/api/lab-portal", labPortalRoutes);
-app.use("/api/admin", adminRoutes);
+app.use("/api/patient-portal", patientPortalRoutes);
 app.use("/api/super-admin", superAdminRoutes);
 
 app.use("/api", (req, res) => {
