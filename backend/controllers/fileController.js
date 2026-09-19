@@ -6,6 +6,8 @@ const files = require("../db/queries/files");
 const patients = require("../db/queries/patients");
 const records = require("../db/queries/records");
 const dp = require("../db/queries/doctorPortal");
+const labPortal = require("../db/queries/labPortal");
+const { getStaffHospitalId } = require("../db/queries/staff");
 
 const { getOwnPatientId } = require("./recordController");
 
@@ -147,6 +149,13 @@ async function canAccessFile(file, req) {
     return Boolean(access);
   }
   if (req.user.role === "hospital") return true;
+  if (req.user.role === "diagnostic_staff") {
+    // Lab technicians may open scan/report files for patients who have lab
+    // requests at their hospital, even if another technician uploaded them.
+    if (!file.patientId) return false;
+    const hospitalId = await getStaffHospitalId(req.user.id);
+    return labPortal.patientHasLabRequestInHospital(file.patientId, hospitalId);
+  }
   return false;
 }
 

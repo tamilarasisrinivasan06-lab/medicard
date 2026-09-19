@@ -2,12 +2,12 @@ import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   getPatientTimeline,
-  getDoctorConsultations,
-  getDoctorPrescriptions,
-  getDoctorLabRequests,
-  getDoctorLabReports,
-  getDoctorDocuments,
-  getDoctorFollowUps,
+  getPatientConsultations,
+  getPatientPrescriptions,
+  getPatientLabRequests,
+  getPatientLabReports,
+  getPatientDocuments,
+  getPatientFollowUps,
   revokePatientAccess,
   createConsultation,
   createDoctorPrescription,
@@ -79,12 +79,12 @@ function PatientDetail() {
   const [confirmDeleteDoc, setConfirmDeleteDoc] = useState(null)
 
   const timeline = useAsync(() => getPatientTimeline(patientId), [patientId])
-  const consultations = useAsync(() => getDoctorConsultations(), [])
-  const prescriptions = useAsync(() => getDoctorPrescriptions(), [])
-  const labRequests = useAsync(() => getDoctorLabRequests(), [])
-  const labReports = useAsync(() => getDoctorLabReports(), [])
-  const documents = useAsync(() => getDoctorDocuments(patientId), [patientId])
-  const followUps = useAsync(() => getDoctorFollowUps(), [])
+  const consultations = useAsync(() => getPatientConsultations(patientId), [patientId])
+  const prescriptions = useAsync(() => getPatientPrescriptions(patientId), [patientId])
+  const labRequests = useAsync(() => getPatientLabRequests(patientId), [patientId])
+  const labReports = useAsync(() => getPatientLabReports(patientId), [patientId])
+  const documents = useAsync(() => getPatientDocuments(patientId), [patientId])
+  const followUps = useAsync(() => getPatientFollowUps(patientId), [patientId])
 
   const patient = timeline.data?.patient
   const access = timeline.data?.access
@@ -825,16 +825,14 @@ function PrescriptionModal({ open, onClose, onSubmit, busy }) {
         </button>
       </div>
       {items.map((it, index) => (
-        <div className="doc-grid doc-grid-4 doc-med-row" key={index}>
+        <div className="doc-grid doc-med-row" key={index}>
           <input placeholder="Medicine name" value={it.medicineName} onChange={(e) => updateItem(index, 'medicineName', e.target.value)} />
           <input placeholder="Dosage" value={it.dosage} onChange={(e) => updateItem(index, 'dosage', e.target.value)} />
           <input placeholder="Frequency" value={it.frequency} onChange={(e) => updateItem(index, 'frequency', e.target.value)} />
-          <div className="doc-flex">
-            <input placeholder="Duration" value={it.duration} onChange={(e) => updateItem(index, 'duration', e.target.value)} />
-            <button className="doc-icon-btn" type="button" onClick={() => removeItem(index)} aria-label="Remove">
-              <TrashIcon size={15} />
-            </button>
-          </div>
+          <input placeholder="Duration" value={it.duration} onChange={(e) => updateItem(index, 'duration', e.target.value)} />
+          <button className="doc-icon-btn doc-med-remove" type="button" onClick={() => removeItem(index)} aria-label="Remove">
+            <TrashIcon size={15} />
+          </button>
         </div>
       ))}
     </Modal>

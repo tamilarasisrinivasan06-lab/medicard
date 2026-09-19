@@ -1031,7 +1031,9 @@ table.doc-table {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--doc-navy);
+  /* Toasts render as a sibling of .doctor-shell (outside its scope), so all
+     colors here are literal and must not rely on --doc-* custom properties. */
+  background: #0f172a;
   color: #f8fafc;
   padding: 12px 12px 12px 16px;
   border-radius: 11px;
@@ -1041,11 +1043,19 @@ table.doc-table {
 }
 
 .doc-toast-success {
-  border-left: 4px solid var(--doc-green);
+  border-left: 4px solid #16a34a;
 }
 
 .doc-toast-error {
-  border-left: 4px solid var(--doc-red);
+  border-left: 4px solid #e11d48;
+}
+
+.doc-toast-warning {
+  border-left: 4px solid #d97706;
+}
+
+.doc-toast-info {
+  border-left: 4px solid #0ea5e9;
 }
 
 .doc-toast span {
@@ -1232,6 +1242,18 @@ table.doc-table {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
+}
+
+.doc-grid-med-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.doc-med-remove {
+  justify-self: center;
 }
 
 .doc-stack {
@@ -1668,6 +1690,10 @@ button.doc-link:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .doc-grid-med-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  }
+
   .doc-stats-2,
   .doc-stats-3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1677,6 +1703,14 @@ button.doc-link:disabled {
 @media (max-width: 560px) {
   .doc-grid-4 {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .doc-grid-med-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .doc-med-remove {
+    justify-self: start;
   }
 
   .doc-stats-2,

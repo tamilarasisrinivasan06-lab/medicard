@@ -499,6 +499,18 @@ async function deleteDocument(id) {
   return rowCount > 0;
 }
 
+async function listDocumentsByPatient(patientId) {
+  const { rows } = await pool.query(
+    `SELECT md.*, u.full_name AS doctor_name
+     FROM medical_documents md
+     JOIN users u ON u.id = md.doctor_id
+     WHERE md.patient_id = $1
+     ORDER BY md.created_at DESC`,
+    [patientId]
+  );
+  return rows.map((r) => ({ ...toPublicDocument(r), doctorName: r.doctor_name }));
+}
+
 // ---------------------------------------------------------------------------
 // follow-ups
 // ---------------------------------------------------------------------------
@@ -557,6 +569,18 @@ async function updateFollowUpStatus(id, status) {
     [status, id]
   );
   return rows[0] ? toPublicFollowUp(rows[0]) : null;
+}
+
+async function listFollowUpsByPatient(patientId) {
+  const { rows } = await pool.query(
+    `SELECT fu.*, u.full_name AS doctor_name
+     FROM follow_ups fu
+     JOIN users u ON u.id = fu.doctor_id
+     WHERE fu.patient_id = $1
+     ORDER BY fu.follow_up_date DESC, fu.created_at DESC`,
+    [patientId]
+  );
+  return rows.map((r) => ({ ...toPublicFollowUp(r), doctorName: r.doctor_name }));
 }
 
 // ---------------------------------------------------------------------------
@@ -792,10 +816,12 @@ module.exports = {
   createDocument,
   getDocumentById,
   listDocuments,
+  listDocumentsByPatient,
   deleteDocument,
   createFollowUp,
   getFollowUpById,
   listFollowUps,
+  listFollowUpsByPatient,
   updateFollowUpStatus,
   getDoctorDashboard,
   getAnalytics,

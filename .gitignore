@@ -18,6 +18,9 @@ backend/dist/
 *.log
 npm-debug.log*
 
+# Uploaded files (multer storage)
+backend/uploads/
+
 # OS-generated files
 .DS_Store
 Thumbs.db

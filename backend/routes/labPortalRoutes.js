@@ -1,5 +1,6 @@
 const express = require("express");
 const { protect, authorizeRoles } = require("../middleware/authMiddleware");
+const { upload } = require("../controllers/fileController");
 const c = require("../controllers/labPortalController");
 
 const router = express.Router();
@@ -11,5 +12,7 @@ router.get("/requests", c.listRequests);
 router.patch("/requests/:labRequestId/status", c.updateRequestStatus);
 router.post("/requests/:labRequestId/report", c.createReport);
 router.get("/reports", c.listReports);
+router.get("/patients", c.listPatients);
+router.post("/scan-report", upload.single("file"), c.uploadScanReport);
 
 module.exports = router;

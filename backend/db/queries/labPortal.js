@@ -185,6 +185,46 @@ async function getLabDashboard(hospitalId = null) {
   };
 }
 
+async function patientHasLabRequestInHospital(patientId, hospitalId = null) {
+  const { rows } = await pool.query(
+    `SELECT 1 AS found FROM lab_requests
+     WHERE patient_id = $1 AND ($2::bigint IS NULL OR hospital_id = $2 OR hospital_id IS NULL)
+     LIMIT 1`,
+    [patientId, hospitalId]
+  );
+  return rows.length > 0;
+}
+
+// Patients a lab technician may legitimately work with: ones that have lab
+// requests at the staff member's hospital.
+async function listLabPortalPatients({ hospitalId = null, q = null } = {}) {
+  const params = [hospitalId];
+  let filter = "WHERE ($1::bigint IS NULL OR lr.hospital_id = $1 OR lr.hospital_id IS NULL)";
+  if (typeof q === "string" && q.trim()) {
+    params.push(`%${q.trim()}%`);
+    filter += ` AND (pu.full_name ILIKE $${params.length} OR m.medicard_id ILIKE $${params.length})`;
+  }
+  const { rows } = await pool.query(
+    `SELECT pp.id AS patient_id, pu.full_name AS name, m.medicard_id,
+            MAX(lr.requested_at) AS last_request_at
+     FROM lab_requests lr
+     JOIN patient_profiles pp ON pp.id = lr.patient_id
+     JOIN users pu ON pu.id = pp.user_id
+     LEFT JOIN medicards m ON m.patient_id = pp.id
+     ${filter}
+     GROUP BY pp.id, pu.full_name, m.medicard_id
+     ORDER BY pu.full_name ASC
+     LIMIT 200`,
+    params
+  );
+  return rows.map((r) => ({
+    patientId: Number(r.patient_id),
+    name: r.name,
+    medicardId: r.medicard_id ?? null,
+    lastRequestAt: r.last_request_at ?? null,
+  }));
+}
+
 module.exports = {
   LAB_REQUEST_STATUSES,
   listLabRequests,
@@ -194,4 +234,6 @@ module.exports = {
   getLabReportById,
   createLabReport,
   getLabDashboard,
+  patientHasLabRequestInHospital,
+  listLabPortalPatients,
 };

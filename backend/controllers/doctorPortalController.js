@@ -4,6 +4,7 @@ const records = require("../db/queries/records");
 const medications = require("../db/queries/medications");
 const allergies = require("../db/queries/allergies");
 const dp = require("../db/queries/doctorPortal");
+const prescriptions = require("../db/queries/prescriptions");
 const notifications = require("../db/queries/notifications");
 const { audit } = require("../services/auditService");
 
@@ -627,6 +628,95 @@ async function updateFollowUpStatus(req, res, next) {
 }
 
 // ---------------------------------------------------------------------------
+// Patient-scoped history (cross-doctor). Each route is protected by
+// requirePatientAccess so a doctor can only read records for a patient who has
+// granted them access, regardless of which doctor created the record.
+// ---------------------------------------------------------------------------
+async function listPatientConsultations(req, res, next) {
+  try {
+    const { patientId } = req.params;
+    if (!isValidId(patientId)) {
+      return res.status(400).json({ success: false, message: "Invalid patient ID" });
+    }
+    const data = await dp.listConsultationsByPatient(Number(patientId));
+    await audit(req, "patient_data_viewed", "patient", Number(patientId), { scope: "consultations" });
+    return res.json({ success: true, data });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function listPatientPrescriptions(req, res, next) {
+  try {
+    const { patientId } = req.params;
+    if (!isValidId(patientId)) {
+      return res.status(400).json({ success: false, message: "Invalid patient ID" });
+    }
+    const data = await prescriptions.listPrescriptionsByPatient(Number(patientId));
+    await audit(req, "patient_data_viewed", "patient", Number(patientId), { scope: "prescriptions" });
+    return res.json({ success: true, data });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function listPatientLabRequests(req, res, next) {
+  try {
+    const { patientId } = req.params;
+    if (!isValidId(patientId)) {
+      return res.status(400).json({ success: false, message: "Invalid patient ID" });
+    }
+    const data = await dp.listLabRequestsByPatient(Number(patientId));
+    await audit(req, "patient_data_viewed", "patient", Number(patientId), { scope: "lab_requests" });
+    return res.json({ success: true, data });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function listPatientLabReports(req, res, next) {
+  try {
+    const { patientId } = req.params;
+    if (!isValidId(patientId)) {
+      return res.status(400).json({ success: false, message: "Invalid patient ID" });
+    }
+    const data = await dp.listLabReportsByPatient(Number(patientId));
+    await audit(req, "patient_data_viewed", "patient", Number(patientId), { scope: "lab_reports" });
+    return res.json({ success: true, data });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function listPatientDocuments(req, res, next) {
+  try {
+    const { patientId } = req.params;
+    if (!isValidId(patientId)) {
+      return res.status(400).json({ success: false, message: "Invalid patient ID" });
+    }
+    const data = await dp.listDocumentsByPatient(Number(patientId));
+    await audit(req, "patient_data_viewed", "patient", Number(patientId), { scope: "documents" });
+    return res.json({ success: true, data });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function listPatientFollowUps(req, res, next) {
+  try {
+    const { patientId } = req.params;
+    if (!isValidId(patientId)) {
+      return res.status(400).json({ success: false, message: "Invalid patient ID" });
+    }
+    const data = await dp.listFollowUpsByPatient(Number(patientId));
+    await audit(req, "patient_data_viewed", "patient", Number(patientId), { scope: "follow_ups" });
+    return res.json({ success: true, data });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Hospital / clinic
 // ---------------------------------------------------------------------------
 async function getMyHospital(req, res, next) {
@@ -723,6 +813,12 @@ module.exports = {
   createFollowUp,
   listFollowUps,
   updateFollowUpStatus,
+  listPatientConsultations,
+  listPatientPrescriptions,
+  listPatientLabRequests,
+  listPatientLabReports,
+  listPatientDocuments,
+  listPatientFollowUps,
   getMyHospital,
   getNotifications,
   markNotificationRead,

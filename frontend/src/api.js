@@ -332,6 +332,30 @@ async function getPatientTimeline(patientId) {
   return request(`/doctor-portal/patients/${patientId}/timeline`)
 }
 
+async function getPatientConsultations(patientId) {
+  return request(`/doctor-portal/patients/${patientId}/consultations`)
+}
+
+async function getPatientPrescriptions(patientId) {
+  return request(`/doctor-portal/patients/${patientId}/prescriptions`)
+}
+
+async function getPatientLabRequests(patientId) {
+  return request(`/doctor-portal/patients/${patientId}/lab-requests`)
+}
+
+async function getPatientLabReports(patientId) {
+  return request(`/doctor-portal/patients/${patientId}/lab-reports`)
+}
+
+async function getPatientDocuments(patientId) {
+  return request(`/doctor-portal/patients/${patientId}/documents`)
+}
+
+async function getPatientFollowUps(patientId) {
+  return request(`/doctor-portal/patients/${patientId}/follow-ups`)
+}
+
 async function getDoctorConsultations(range) {
   const q = range ? `?range=${encodeURIComponent(range)}` : ''
   return request(`/doctor-portal/consultations${q}`)
@@ -483,6 +507,15 @@ async function createLabReportForRequest(labRequestId, payload) {
 
 async function getLabPortalReports() {
   return request('/lab-portal/reports')
+}
+
+async function getLabPortalPatients(q) {
+  const params = q ? `?q=${encodeURIComponent(q)}` : ''
+  return request(`/lab-portal/patients${params}`)
+}
+
+async function uploadLabScanReport(formData) {
+  return requestFile('/lab-portal/scan-report', formData)
 }
 
 // Patient portal
@@ -661,6 +694,12 @@ export {
   getAccessRequests,
   revokePatientAccess,
   getPatientTimeline,
+  getPatientConsultations,
+  getPatientPrescriptions,
+  getPatientLabRequests,
+  getPatientLabReports,
+  getPatientDocuments,
+  getPatientFollowUps,
   getDoctorConsultations,
   createConsultation,
   updateConsultation,
@@ -696,6 +735,8 @@ export {
   updateLabQueueStatus,
   createLabReportForRequest,
   getLabPortalReports,
+  getLabPortalPatients,
+  uploadLabScanReport,
   getAdminDashboard,
   getAdminUsers,
   setAdminUserStatus,
