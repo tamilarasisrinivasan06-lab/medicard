@@ -41,4 +41,25 @@ function requireAccessForRole(...roles) {
   };
 }
 
-module.exports = { requireAccessGrant, requireAccessForRole };
+async function requirePatientAccess(req, res, next) {
+  const patientId = Number(req.params.patientId);
+  if (!Number.isInteger(patientId) || patientId <= 0) {
+    return res.status(400).json({ success: false, message: "Invalid patient ID" });
+  }
+
+  try {
+    const grant = await dp.getActiveAccess(req.user.id, patientId);
+    if (!grant) {
+      return res.status(403).json({
+        success: false,
+        message: "You do not have active access to this patient's records",
+      });
+    }
+    req.access = { grant };
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+}
+
+module.exports = { requireAccessGrant, requireAccessForRole, requirePatientAccess };
