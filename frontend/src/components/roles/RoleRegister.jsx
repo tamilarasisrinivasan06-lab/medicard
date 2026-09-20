@@ -58,35 +58,34 @@ function RoleRegister() {
     (config.role !== 'doctor' || form.specialization.trim())
 
   function handleChange(e) {
-    setForm({ ...form, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    setForm((prev) => ({ ...prev, [name]: value }))
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!valid || submitting) return
+    if (!valid) return
     setError('')
     setSubmitting(true)
 
     try {
       const payload = {
         name: form.name.trim(),
-        email: form.email.trim(),
+        email: form.email.trim().toLowerCase(),
         phone: form.phone.trim(),
         password: form.password,
         role: config.role,
-        dateOfBirth: form.dateOfBirth || undefined,
-        gender: form.gender || undefined,
-      }
-      if (config.role === 'doctor') {
-        payload.specialization = form.specialization.trim()
-        payload.qualification = form.qualification.trim() || undefined
-        payload.experience = form.experience ? Number(form.experience) : undefined
+        dateOfBirth: form.dateOfBirth || null,
+        gender: form.gender || null,
+        specialization: config.role === 'doctor' ? form.specialization.trim() : undefined,
+        qualification: config.role === 'doctor' ? form.qualification.trim() : undefined,
+        experience: config.role === 'doctor' && form.experience ? Number(form.experience) : undefined,
       }
 
       const result = await registerUser(payload)
 
       if (result.success) {
-        navigate(`/login/${config.key}?created=1`, { replace: true })
+        navigate(`/login/${config.key}?created=1`)
         return
       }
       setError(result.message || 'Unable to create your account right now. Please try again.')
@@ -112,7 +111,7 @@ function RoleRegister() {
             style={{ background: config.soft, color: config.color }}
             aria-hidden="true"
           >
-            <RoleIcon name={config.icon} size={28} />
+            <RoleIcon name={config.icon} size={30} color={config.color} />
           </span>
           <div>
             <h1>Create {config.label} Account</h1>

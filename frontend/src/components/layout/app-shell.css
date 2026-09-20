@@ -210,7 +210,60 @@
   border-top: 1px solid var(--doc-line);
   display: flex;
   flex-direction: column;
+  gap: 10px;
+}
+
+.mc-sidebar-pro-card {
+  background: #111827;
+  color: #f8fafc;
+  border-radius: 14px;
+  padding: 14px 16px;
+  border: 1px solid #1f2937;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.mc-pro-header {
+  display: flex;
+  align-items: center;
   gap: 8px;
+  margin-bottom: 6px;
+}
+
+.mc-pro-spark {
+  color: #f59e0b;
+  font-size: 14px;
+}
+
+.mc-pro-tag {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.mc-pro-text {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #9ca3af;
+  margin: 0 0 10px 0;
+}
+
+.mc-pro-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #10b981;
+}
+
+.mc-pro-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
 }
 
 .mc-mini-profile {
@@ -594,54 +647,60 @@
 .mc-hero {
   position: relative;
   overflow: hidden;
-  border-radius: 22px;
-  padding: 28px;
-  background: linear-gradient(130deg, #1a73e8 0%, #1e88e5 45%, #0ea5e9 100%);
+  border-radius: 20px;
+  padding: 30px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #0284c7 100%);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 26px;
-  box-shadow: 0 24px 48px -28px rgba(26, 115, 232, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 20px 40px -18px rgba(37, 99, 235, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .mc-hero::after {
   content: '';
   position: absolute;
-  width: 320px;
-  height: 320px;
+  width: 360px;
+  height: 360px;
   border-radius: 50%;
-  right: -120px;
-  top: -150px;
-  background: rgba(255, 255, 255, 0.12);
+  right: -100px;
+  top: -140px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 70%);
+  pointer-events: none;
 }
 
 .mc-hero-body {
   position: relative;
   z-index: 1;
-  max-width: 560px;
+  max-width: 580px;
 }
 
 .mc-hero-icon {
-  width: 54px;
-  height: 54px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.2);
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   display: grid;
   place-items: center;
   margin-bottom: 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
 .mc-hero h2 {
   margin: 0 0 6px;
-  font-size: 22px;
-  letter-spacing: -0.01em;
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
 .mc-hero p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 14px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 14.5px;
+  line-height: 1.5;
 }
 
 .mc-hero-actions {
@@ -745,19 +804,57 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 18px;
-  border-radius: var(--doc-radius);
-  background: var(--doc-white);
-  border: 1px solid var(--doc-line);
+  padding: 20px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border: 1px solid rgba(226, 232, 240, 0.85);
   text-decoration: none;
   color: inherit;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  box-shadow: 0 4px 16px -4px rgba(15, 23, 42, 0.04);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.mc-feature::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease;
+  pointer-events: none;
 }
 
 .mc-feature:hover {
   transform: translateY(-4px);
-  border-color: transparent;
-  box-shadow: 0 22px 42px -24px rgba(15, 23, 42, 0.45);
+  box-shadow: 0 16px 32px -12px rgba(15, 23, 42, 0.12);
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+.mc-feature strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--doc-ink);
+}
+
+.mc-feature span {
+  font-size: 13px;
+  color: var(--doc-muted);
+  line-height: 1.4;
+}
+
+.mc-feature em {
+  margin-top: auto;
+  font-style: normal;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--doc-accent);
+  transition: transform 0.15s ease;
+}
+
+.mc-feature:hover em {
+  transform: translateX(4px);
 }
 
 .mc-feature-icon {

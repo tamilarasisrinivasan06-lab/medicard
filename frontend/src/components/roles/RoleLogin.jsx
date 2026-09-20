@@ -45,7 +45,7 @@ function RoleLogin() {
             style={{ background: config.soft, color: config.color }}
             aria-hidden="true"
           >
-            <RoleIcon name={config.icon} size={28} />
+            <RoleIcon name={config.icon} size={30} color={config.color} />
           </span>
           <div>
             <h1>{config.label} Login</h1>

@@ -4,6 +4,7 @@ const { requirePatientAccess } = require("../middleware/accessMiddleware");
 const { getMyDoctorProfile, updateMyDoctorProfile } = require("../controllers/doctorController");
 const prescriptionController = require("../controllers/prescriptionController");
 const appointmentController = require("../controllers/appointmentController");
+const aiChatController = require("../controllers/aiChatController");
 const c = require("../controllers/doctorPortalController");
 
 const router = express.Router();
@@ -17,6 +18,10 @@ router.patch("/me", updateMyDoctorProfile);
 // Dashboard & analytics
 router.get("/dashboard", c.getDashboard);
 router.get("/analytics", c.getAnalytics);
+
+// AI Clinical Assistant routes (Protected with active patient access check)
+router.post("/patients/:patientId/ai-chat", requirePatientAccess, aiChatController.askPatientAssistant);
+router.get("/patients/:patientId/ai-summary", requirePatientAccess, aiChatController.getPatientClinicalSummary);
 
 // Patients & access
 router.get("/patients", c.listPatients);

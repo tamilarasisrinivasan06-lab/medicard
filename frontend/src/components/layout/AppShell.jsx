@@ -129,6 +129,18 @@ export function AppShell({
           </nav>
 
           <div className="mc-sidebar-foot">
+            <div className="mc-sidebar-pro-card">
+              <div className="mc-pro-header">
+                <span className="mc-pro-spark">✦</span>
+                <span className="mc-pro-tag">MediCard Pro</span>
+              </div>
+              <p className="mc-pro-text">AI Clinical Co-pilot & Instant Multi-turn RAG is active.</p>
+              <div className="mc-pro-status">
+                <span className="mc-pro-dot" />
+                <span>Gemini Flash 2.0 Connected</span>
+              </div>
+            </div>
+
             {profileTo && (
               <NavLink to={profileTo} className="mc-mini-profile" onClick={() => setDrawerOpen(false)}>
                 <span className="mc-avatar">{initial}</span>

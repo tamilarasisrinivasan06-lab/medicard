@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 const API_ORIGIN = API_URL.replace(/\/api\/?$/, '')
 const ACCESS_KEY = 'medicardAccess'
 const TOKEN_KEY = 'token'
@@ -587,6 +587,18 @@ async function getPatientPortalAccessHistory(status) {
   return request(`/patient-portal/access-history${q}`)
 }
 
+// Doctor AI Clinical Assistant
+async function askDoctorAIChat(patientId, query, history = []) {
+  return request(`/doctor-portal/patients/${patientId}/ai-chat`, {
+    method: 'POST',
+    body: JSON.stringify({ query, history }),
+  })
+}
+
+async function getDoctorAISummary(patientId) {
+  return request(`/doctor-portal/patients/${patientId}/ai-summary`)
+}
+
 // Admin & hospital portal
 async function getAdminDashboard() {
   return request('/admin/dashboard')
@@ -764,6 +776,8 @@ export {
   markAllPatientPortalNotificationsRead,
   searchPatientPortal,
   getPatientPortalAccessHistory,
+  askDoctorAIChat,
+  getDoctorAISummary,
   getToken,
   getRole,
   setSession,

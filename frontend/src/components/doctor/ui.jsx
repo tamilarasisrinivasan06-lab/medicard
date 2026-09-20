@@ -47,13 +47,24 @@ export function Card({ title, subtitle, actions, children, className = '', bodyC
   )
 }
 
-export function StatCard({ icon, label, value, hint, tone = 'accent' }) {
+export function StatCard({ icon, label, value, hint, delta, deltaType = 'increase', tone = 'accent' }) {
+  const isUp = deltaType === 'increase'
   return (
     <div className={`doc-stat doc-stat-${tone}`}>
-      <span className="doc-stat-icon">{icon}</span>
+      <div className="doc-stat-top">
+        <span className="doc-stat-icon">{icon}</span>
+        {delta && (
+          <span className={`doc-stat-delta ${isUp ? 'is-up' : 'is-down'}`}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              {isUp ? <polyline points="18 15 12 9 6 15" /> : <polyline points="6 9 12 15 18 9" />}
+            </svg>
+            <span>{delta}</span>
+          </span>
+        )}
+      </div>
       <div className="doc-stat-body">
-        <strong className="doc-stat-value">{value ?? '—'}</strong>
         <span className="doc-stat-label">{label}</span>
+        <strong className="doc-stat-value">{value ?? '—'}</strong>
         {hint && <span className="doc-stat-hint">{hint}</span>}
       </div>
     </div>

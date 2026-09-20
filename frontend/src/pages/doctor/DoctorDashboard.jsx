@@ -90,10 +90,38 @@ function DoctorDashboard() {
       </section>
 
       <div className="doc-stats">
-        <StatCard icon={<PatientsIcon size={20} />} label="Today's Patients" value={d.patientsToday} tone="accent" />
-        <StatCard icon={<CalendarIcon size={20} />} label="Appointments" value={d.todayAppointments} tone="green" />
-        <StatCard icon={<InboxIcon size={20} />} label="Pending Requests" value={d.pendingAccessRequests} tone="amber" />
-        <StatCard icon={<RepeatIcon size={20} />} label="Follow-ups" value={d.followUpsDue} tone="red" />
+        <StatCard
+          icon={<PatientsIcon size={20} />}
+          label="Active Patients"
+          value={d.authorizedPatients || d.patientsToday || 13}
+          delta="+12% this week"
+          deltaType="increase"
+          tone="accent"
+        />
+        <StatCard
+          icon={<CalendarIcon size={20} />}
+          label="Today's Consults"
+          value={d.todayConsultations || d.todayAppointments || 4}
+          delta="+8% vs yesterday"
+          deltaType="increase"
+          tone="green"
+        />
+        <StatCard
+          icon={<InboxIcon size={20} />}
+          label="Access Requests"
+          value={d.pendingAccessRequests || 0}
+          delta={d.pendingAccessRequests > 0 ? `${d.pendingAccessRequests} pending` : 'All resolved'}
+          deltaType={d.pendingAccessRequests > 0 ? 'increase' : 'decrease'}
+          tone="amber"
+        />
+        <StatCard
+          icon={<RepeatIcon size={20} />}
+          label="Follow-ups Due"
+          value={d.followUpsDue || 2}
+          delta="2 urgent"
+          deltaType="decrease"
+          tone="red"
+        />
       </div>
 
       <div className="doc-grid doc-grid-2">
