@@ -3,8 +3,8 @@ const bcrypt = require("bcryptjs");
 const pool = require("./pool");
 const patients = require("./queries/patients");
 
-if (!process.env.DATABASE_URL) {
-  console.error("DATABASE_URL is not defined. Add it to backend/.env");
+if (!process.env.DATABASE_URL && !process.env.DB_NAME) {
+  console.error("Neither DATABASE_URL nor DB_NAME is defined. Add it to backend/.env");
   process.exit(1);
 }
 

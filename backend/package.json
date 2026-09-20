@@ -9,6 +9,8 @@
     "db:migrate": "node db/migrate.js",
     "db:seed": "node db/seed.js",
     "db:seed:demo": "node db/seed-demo.js",
+    "db:seed:large": "node db/seed-large.js",
+    "db:seed:samples": "node db/seed-samples.js",
     "db:setup": "node db/migrate.js && node db/seed.js"
   },
   "keywords": [],

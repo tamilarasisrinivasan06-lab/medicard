@@ -19,6 +19,7 @@ import {
   deleteConsultation,
   uploadPatientFile,
 } from '../../api'
+import DoctorAIChatbot from '../../components/doctor/DoctorAIChatbot'
 import {
   useAsync,
   useToast,
@@ -77,6 +78,7 @@ function PatientDetail() {
   const [confirmRevoke, setConfirmRevoke] = useState(false)
   const [confirmDeleteConsult, setConfirmDeleteConsult] = useState(null)
   const [confirmDeleteDoc, setConfirmDeleteDoc] = useState(null)
+  const [showAIChat, setShowAIChat] = useState(false)
 
   const timeline = useAsync(() => getPatientTimeline(patientId), [patientId])
   const consultations = useAsync(() => getPatientConsultations(patientId), [patientId])
@@ -188,6 +190,13 @@ function PatientDetail() {
         subtitle={`MediCard ${patient?.medicardId || '—'} · ${ageFromDob(patient?.dateOfBirth)} · ${patient?.gender || '—'} · Blood group ${patient?.bloodGroup || '—'}`}
         actions={
           <>
+            <button
+              className={`doc-btn ${showAIChat ? 'doc-btn-primary' : 'doc-btn-ai'}`}
+              onClick={() => setShowAIChat((prev) => !prev)}
+              title="Open AI Clinical Assistant"
+            >
+              🤖 {showAIChat ? 'Hide AI Assistant' : 'AI Clinical Assistant'}
+            </button>
             <button className="doc-btn doc-btn-ghost" onClick={() => setModal('followUp')}>
               <RepeatIcon size={16} /> Follow-up
             </button>
@@ -197,6 +206,15 @@ function PatientDetail() {
           </>
         }
       />
+
+      {showAIChat && (
+        <DoctorAIChatbot
+          patientId={patientId}
+          patientName={patient?.name}
+          medicardId={patient?.medicardId}
+          onClose={() => setShowAIChat(false)}
+        />
+      )}
 
       <Card className="doc-access-banner">
         <div className="doc-flex-between">

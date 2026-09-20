@@ -5,8 +5,8 @@ const pool = require("./pool");
 const { getDBStatus } = require("./status");
 
 async function migrate() {
-  if (!process.env.DATABASE_URL) {
-    console.error("DATABASE_URL is not defined in environment variables.");
+  if (!process.env.DATABASE_URL && !process.env.DB_NAME) {
+    console.error("Neither DATABASE_URL nor DB_NAME is defined in environment variables.");
     process.exit(1);
   }
 
