@@ -23,6 +23,7 @@ import {
   BellIcon,
   UserIcon,
   SettingsIcon,
+  BotIcon,
 } from '../doctor/icons'
 import { ToastProvider } from '../doctor/ui'
 import AppShell from '../layout/AppShell'
@@ -30,12 +31,14 @@ import '../doctor/doctor.css'
 
 const PRIMARY = [
   { to: '/patient/dashboard', label: 'Dashboard', icon: DashboardIcon },
+  { to: '/patient/ai-assistant', label: 'AI Virtual Assistant', icon: BotIcon },
   { to: '/patient/history', label: 'Medical History', icon: ClockIcon },
   { to: '/patient/scans', label: 'Scan Reports', icon: ScanIcon },
   { to: '/patient/prescriptions', label: 'Medicines', icon: PillIcon },
   { to: '/patient/appointments', label: 'Appointments', icon: CalendarIcon },
   { to: '/patient/profile', label: 'Profile', icon: UserIcon },
 ]
+
 
 const MORE = [
   { to: '/patient/medi-card', label: 'My Medi Card', icon: QrIcon },

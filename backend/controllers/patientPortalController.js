@@ -249,6 +249,202 @@ async function getAccessHistory(req, res, next) {
   }
 }
 
+const aiService = require("../services/aiService");
+const pool = require("../db/pool");
+
+/**
+ * Interactive turn-by-turn conversational AI triage with patient
+ */
+async function chatPatientAIAssistant(req, res, next) {
+  try {
+    const patientId = await requirePatient(req);
+    if (!patientId) {
+      return res.status(404).json({ success: false, message: "Patient profile not found" });
+    }
+
+    const { message, history } = req.body;
+    if (!message || typeof message !== "string" || message.trim().length === 0) {
+      return res.status(400).json({ success: false, message: "Message is required" });
+    }
+
+    const context = await aiService.assembleClinicalContext(patientId, message);
+    if (!context) {
+      return res.status(404).json({ success: false, message: "Patient context not found" });
+    }
+
+    const result = await aiService.chatPatientAssistant({
+      patientContext: context,
+      message: message.trim(),
+      chatHistory: Array.isArray(history) ? history : [],
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        patientName: context.patient.name,
+        medicardId: context.patient.medicardId,
+        reply: result.reply,
+        redFlags: result.redFlags || [],
+        suggestedResponses: result.suggestedResponses || [],
+        readyToSummarize: result.readyToSummarize || false,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+/**
+ * Pre-generate the clinical SBAR/SOAP summary before final sending
+ */
+async function generatePatientAISummary(req, res, next) {
+  try {
+    const patientId = await requirePatient(req);
+    if (!patientId) {
+      return res.status(404).json({ success: false, message: "Patient profile not found" });
+    }
+
+    const { conversation, chiefComplaint, vitals } = req.body;
+    const context = await aiService.assembleClinicalContext(patientId, "intake_summary");
+    if (!context) {
+      return res.status(404).json({ success: false, message: "Patient context not found" });
+    }
+
+    const result = await aiService.generateIntakeSummaryReport({
+      patientContext: context,
+      conversation: Array.isArray(conversation) ? conversation : [],
+      chiefComplaint: chiefComplaint || "",
+      vitals: vitals || {},
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        patientName: context.patient.name,
+        medicardId: context.patient.medicardId,
+        clinicalSummary: result.clinicalSummary,
+        severity: result.severity,
+        redFlags: result.redFlags,
+        chiefComplaint: result.chiefComplaint,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+/**
+ * Submit the intake report and dispatch to doctor with notifications
+ */
+async function submitPatientAIIntake(req, res, next) {
+  try {
+    const patientId = await requirePatient(req);
+    if (!patientId) {
+      return res.status(404).json({ success: false, message: "Patient profile not found" });
+    }
+
+    const {
+      doctorId,
+      chiefComplaint,
+      symptoms,
+      duration,
+      severity,
+      vitals,
+      transcript,
+      clinicalSummary,
+    } = req.body;
+
+    if (!clinicalSummary) {
+      return res.status(400).json({ success: false, message: "Clinical summary is required" });
+    }
+
+    const docId = doctorId ? Number(doctorId) : null;
+
+    const { rows } = await pool.query(
+      `INSERT INTO patient_ai_intakes
+       (patient_id, doctor_id, chief_complaint, symptoms, duration, severity, vitals, transcript, clinical_summary, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'submitted')
+       RETURNING *`,
+      [
+        patientId,
+        docId,
+        chiefComplaint || "General Medical Intake",
+        symptoms || "",
+        duration || "",
+        severity || "moderate",
+        JSON.stringify(vitals || {}),
+        JSON.stringify(transcript || []),
+        clinicalSummary,
+      ]
+    );
+
+    const intakeRecord = rows[0];
+
+    // If doctor is specified, notify doctor
+    if (docId) {
+      // Find doctor's user_id
+      const docUser = await pool.query(
+        `SELECT u.id AS user_id, u.full_name FROM users u WHERE u.id = $1`,
+        [docId]
+      );
+      if (docUser.rows.length > 0) {
+        await notifications.createNotification({
+          userId: docId,
+          type: "ai_intake_received",
+          title: `New AI Patient Intake: ${chiefComplaint || "Patient Consultation"}`,
+          body: `A patient submitted an AI triage clinical summary (Severity: ${severity || "moderate"}). Click to review.`,
+          link: `/doctor/patients/${patientId}?tab=ai-intakes`,
+        });
+      }
+    }
+
+    // Also notify patient
+    await notifications.createNotification({
+      userId: req.user.id,
+      type: "ai_intake_submitted",
+      title: "Intake Summary Sent to Doctor",
+      body: "Your symptoms and clinical summary have been compiled and securely sent to your doctor.",
+      link: "/patient/ai-assistant",
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "AI Intake report submitted successfully",
+      data: intakeRecord,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+/**
+ * List patient's past AI intake reports
+ */
+async function listPatientAIIntakes(req, res, next) {
+  try {
+    const patientId = await requirePatient(req);
+    if (!patientId) {
+      return res.status(404).json({ success: false, message: "Patient profile not found" });
+    }
+
+    const { rows } = await pool.query(
+      `SELECT pai.*, u.full_name AS doctor_name, d.specialization AS doctor_specialization
+       FROM patient_ai_intakes pai
+       LEFT JOIN users u ON u.id = pai.doctor_id
+       LEFT JOIN doctors d ON d.user_id = pai.doctor_id
+       WHERE pai.patient_id = $1
+       ORDER BY pai.created_at DESC
+       LIMIT 30`,
+      [patientId]
+    );
+
+    return res.json({ success: true, data: rows });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   getDashboard,
   getMedicard,
@@ -266,4 +462,9 @@ module.exports = {
   markAllNotificationsRead,
   search,
   getAccessHistory,
+  chatPatientAIAssistant,
+  generatePatientAISummary,
+  submitPatientAIIntake,
+  listPatientAIIntakes,
 };
+

@@ -25,4 +25,11 @@ router.post("/notifications/read-all", c.markAllNotificationsRead);
 router.get("/search", c.search);
 router.get("/access-history", c.getAccessHistory);
 
+// Patient AI Virtual Assistant & Clinical Intake Routes
+router.post("/ai-intake/chat", c.chatPatientAIAssistant);
+router.post("/ai-intake/summarize", c.generatePatientAISummary);
+router.post("/ai-intake/submit", c.submitPatientAIIntake);
+router.get("/ai-intake/history", c.listPatientAIIntakes);
+
 module.exports = router;
+

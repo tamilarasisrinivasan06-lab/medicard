@@ -31,12 +31,14 @@ router.get("/patient-access/requests", c.listAccessRequests);
 router.get("/patients/:patientId/access", c.getPatientAccess);
 router.post("/patients/:patientId/revoke", c.revokePatientAccess);
 router.get("/patients/:patientId/timeline", requirePatientAccess, c.getPatientTimeline);
-  router.get("/patients/:patientId/consultations", requirePatientAccess, c.listPatientConsultations);
-  router.get("/patients/:patientId/prescriptions", requirePatientAccess, c.listPatientPrescriptions);
-  router.get("/patients/:patientId/lab-requests", requirePatientAccess, c.listPatientLabRequests);
-  router.get("/patients/:patientId/lab-reports", requirePatientAccess, c.listPatientLabReports);
-  router.get("/patients/:patientId/documents", requirePatientAccess, c.listPatientDocuments);
-  router.get("/patients/:patientId/follow-ups", requirePatientAccess, c.listPatientFollowUps);
+router.get("/patients/:patientId/consultations", requirePatientAccess, c.listPatientConsultations);
+router.get("/patients/:patientId/prescriptions", requirePatientAccess, c.listPatientPrescriptions);
+router.get("/patients/:patientId/lab-requests", requirePatientAccess, c.listPatientLabRequests);
+router.get("/patients/:patientId/lab-reports", requirePatientAccess, c.listPatientLabReports);
+router.get("/patients/:patientId/documents", requirePatientAccess, c.listPatientDocuments);
+router.get("/patients/:patientId/follow-ups", requirePatientAccess, c.listPatientFollowUps);
+router.get("/patients/:patientId/ai-intakes", requirePatientAccess, c.listDoctorPatientAIIntakes);
+router.patch("/ai-intakes/:intakeId", c.updateDoctorAIIntakeStatus);
 
 // Consultations
 router.get("/consultations", c.listConsultations);

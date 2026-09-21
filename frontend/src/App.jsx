@@ -27,6 +27,8 @@ import PatientProfile from './pages/patient/Profile'
 import PatientSettings from './pages/patient/Settings'
 import PatientDoctorAccess from './pages/patient/DoctorAccess'
 import PatientSearch from './pages/patient/Search'
+import PatientAIAssistant from './pages/patient/PatientAIAssistant'
+
 import DoctorDashboard from './pages/doctor/DoctorDashboard'
 import DoctorPatients from './pages/doctor/DoctorPatients'
 import DoctorPatientDetail from './pages/doctor/DoctorPatientDetail'
@@ -106,6 +108,7 @@ function App() {
         <Route path="/patient" element={<PatientLayout />}>
           <Route index element={<Navigate to="/patient/dashboard" replace />} />
           <Route path="dashboard" element={<PatientDashboard />} />
+          <Route path="ai-assistant" element={<PatientAIAssistant />} />
           <Route path="medi-card" element={<PatientMediCard />} />
           <Route path="doctors" element={<PatientDoctors />} />
           <Route path="doctors/:doctorId" element={<PatientDoctorDetail />} />

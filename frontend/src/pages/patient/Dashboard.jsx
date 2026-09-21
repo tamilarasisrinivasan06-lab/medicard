@@ -100,7 +100,49 @@ function Dashboard() {
         </div>
       </section>
 
+      {/* AI Virtual Assistant Banner */}
+      <section
+        style={{
+          background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+          borderRadius: '16px',
+          padding: '1.25rem 1.5rem',
+          color: '#fff',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
+          margin: '1.5rem 0',
+        }}
+      >
+        <div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.2)', padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+            ✨ NEW: AI Clinical Virtual Assistant
+          </div>
+          <h3 style={{ margin: '0 0 0.35rem 0', fontSize: '1.2rem', fontWeight: 700 }}>Feeling Unwell or Need a Pre-Consultation Triage?</h3>
+          <p style={{ margin: 0, fontSize: '0.88rem', opacity: 0.9 }}>
+            Talk or speak with our AI Assistant to triage your symptoms and automatically send an SBAR summary to your doctor.
+          </p>
+        </div>
+        <Link
+          to="/patient/ai-assistant"
+          style={{
+            padding: '0.65rem 1.25rem',
+            borderRadius: '10px',
+            background: '#fff',
+            color: '#0369a1',
+            fontWeight: 700,
+            fontSize: '0.9rem',
+            textDecoration: 'none',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          }}
+        >
+          Talk to AI Assistant →
+        </Link>
+      </section>
+
       <div className="mc-features">
+
         {FEATURES.map(({ to, label, desc, icon: Icon, tone }) => (
           <Link key={to} to={to} className="mc-feature">
             <span className={`mc-feature-icon ${tone}`}>

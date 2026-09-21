@@ -18,6 +18,8 @@ import {
   deleteDocument,
   deleteConsultation,
   uploadPatientFile,
+  getDoctorPatientAIIntakes,
+  updateDoctorAIIntakeStatus,
 } from '../../api'
 import DoctorAIChatbot from '../../components/doctor/DoctorAIChatbot'
 import {
@@ -52,7 +54,9 @@ import {
   PlusIcon,
   TrashIcon,
   ScanIcon,
+  BotIcon,
 } from '../../components/doctor/icons'
+
 
 const DOC_CATEGORIES = ['report', 'scan', 'prescription', 'discharge_summary', 'insurance', 'other']
 
@@ -86,6 +90,7 @@ function PatientDetail() {
   const labReports = useAsync(() => getPatientLabReports(patientId), [patientId])
   const documents = useAsync(() => getPatientDocuments(patientId), [patientId])
   const followUps = useAsync(() => getPatientFollowUps(patientId), [patientId])
+  const aiIntakes = useAsync(() => getDoctorPatientAIIntakes(patientId), [patientId])
 
   const patient = timeline.data?.patient
   const access = timeline.data?.access
@@ -98,6 +103,7 @@ function PatientDetail() {
     labReports.reload()
     documents.reload()
     followUps.reload()
+    aiIntakes.reload()
   }
 
   const byPatient = useMemo(() => {
@@ -109,8 +115,10 @@ function PatientDetail() {
       labReports: (labReports.data || []).filter(match),
       documents: documents.data || [],
       followUps: (followUps.data || []).filter(match),
+      aiIntakes: aiIntakes.data || [],
     }
-  }, [consultations.data, prescriptions.data, labRequests.data, labReports.data, documents.data, followUps.data, patientId])
+  }, [consultations.data, prescriptions.data, labRequests.data, labReports.data, documents.data, followUps.data, aiIntakes.data, patientId])
+
 
   if (timeline.loading) return <Loading label="Loading patient record…" />
   if (timeline.error) {
@@ -177,12 +185,14 @@ function PatientDetail() {
 
   const tabs = [
     { value: 'overview', label: 'Overview' },
+    { value: 'ai-intakes', label: `AI Triage Reports (${byPatient.aiIntakes.length})` },
     { value: 'records', label: `Medical Records (${timeline.data?.records?.length || 0})` },
     { value: 'consultations', label: `Consultations (${byPatient.consultations.length})` },
     { value: 'prescriptions', label: `Prescriptions (${byPatient.prescriptions.length})` },
     { value: 'lab', label: `Lab (${byPatient.labRequests.length + byPatient.labReports.length})` },
     { value: 'documents', label: `Documents (${byPatient.documents.length})` },
   ]
+
 
   return (
     <>
@@ -561,6 +571,110 @@ function PatientDetail() {
                   <PlusIcon size={15} /> Add document
                 </button>
               }
+            />
+          )}
+        </Card>
+      )}
+
+      {tab === 'ai-intakes' && (
+        <Card
+          title="Patient AI Intake Summaries"
+          subtitle="Pre-consultation clinical SBAR triage notes compiled by the MediCard Virtual Assistant"
+        >
+          {byPatient.aiIntakes.length ? (
+            <div className="doc-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.25rem' }}>
+              {byPatient.aiIntakes.map((intake) => (
+                <div
+                  key={intake.id}
+                  style={{
+                    border: intake.severity === 'critical' ? '2px solid #ef4444' : '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '1.25rem',
+                    background: intake.severity === 'critical' ? '#fef2f2' : '#ffffff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '999px',
+                          background: intake.severity === 'critical' ? '#dc2626' : intake.severity === 'severe' ? '#ea580c' : '#0284c7',
+                          color: '#fff',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {intake.severity} Urgency
+                      </span>
+                      <StatusBadge status={intake.status === 'submitted' ? 'pending' : 'completed'} label={intake.status.toUpperCase()} />
+                    </div>
+
+                    <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.05rem', color: '#0f172a' }}>
+                      {intake.chief_complaint || 'Symptom Triage'}
+                    </h4>
+
+                    <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.85rem' }}>
+                      Submitted: {formatDateTime(intake.created_at)}
+                    </div>
+
+                    <div
+                      style={{
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        padding: '0.85rem',
+                        fontSize: '0.82rem',
+                        lineHeight: 1.5,
+                        maxHeight: '220px',
+                        overflowY: 'auto',
+                        whiteSpace: 'pre-line',
+                        fontFamily: 'monospace',
+                        marginBottom: '1rem',
+                      }}
+                    >
+                      {intake.clinical_summary}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      className="doc-btn doc-btn-sm"
+                      onClick={() => {
+                        setModal('consultation')
+                      }}
+                      style={{ flex: 1 }}
+                    >
+                      <PlusIcon size={14} /> Import to Consultation
+                    </button>
+                    {intake.status === 'submitted' && (
+                      <button
+                        className="doc-btn doc-btn-ghost doc-btn-sm"
+                        onClick={async () => {
+                          const res = await updateDoctorAIIntakeStatus(intake.id, { status: 'reviewed' })
+                          if (res.success) {
+                            notify('Intake marked as reviewed')
+                            reloadAll()
+                          }
+                        }}
+                      >
+                        Mark Reviewed
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={<BotIcon size={26} />}
+              title="No AI Intake Reports"
+              message="When this patient uses the AI Virtual Assistant, their pre-consultation SBAR notes will appear here automatically."
             />
           )}
         </Card>

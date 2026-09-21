@@ -599,6 +599,44 @@ async function getDoctorAISummary(patientId) {
   return request(`/doctor-portal/patients/${patientId}/ai-summary`)
 }
 
+// Patient AI Virtual Assistant & Intake
+async function askPatientAIAssistant(message, history = []) {
+  return request('/patient-portal/ai-intake/chat', {
+    method: 'POST',
+    body: JSON.stringify({ message, history }),
+  })
+}
+
+async function generatePatientAISummary(payload) {
+  return request('/patient-portal/ai-intake/summarize', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+async function submitPatientAIIntake(payload) {
+  return request('/patient-portal/ai-intake/submit', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+async function getPatientAIIntakes() {
+  return request('/patient-portal/ai-intake/history')
+}
+
+async function getDoctorPatientAIIntakes(patientId) {
+  return request(`/doctor-portal/patients/${patientId}/ai-intakes`)
+}
+
+async function updateDoctorAIIntakeStatus(intakeId, payload) {
+  return request(`/doctor-portal/ai-intakes/${intakeId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+
 // Admin & hospital portal
 async function getAdminDashboard() {
   return request('/admin/dashboard')
@@ -778,6 +816,12 @@ export {
   getPatientPortalAccessHistory,
   askDoctorAIChat,
   getDoctorAISummary,
+  askPatientAIAssistant,
+  generatePatientAISummary,
+  submitPatientAIIntake,
+  getPatientAIIntakes,
+  getDoctorPatientAIIntakes,
+  updateDoctorAIIntakeStatus,
   getToken,
   getRole,
   setSession,
@@ -786,3 +830,4 @@ export {
   getSavedAccess,
   clearSavedAccess,
 }
+

@@ -778,11 +778,46 @@ async function markAllNotificationsRead(req, res, next) {
 // ---------------------------------------------------------------------------
 // Audit trail
 // ---------------------------------------------------------------------------
-async function getAuditLogs(req, res, next) {
+// Patient AI Intake Reports for Doctor
+// ---------------------------------------------------------------------------
+async function listDoctorPatientAIIntakes(req, res, next) {
   try {
-    const auditQ = require("../db/queries/audit");
-    const data = await auditQ.listLogsByUser(req.user.id);
-    return res.json({ success: true, data });
+    const { patientId } = req.params;
+    const pool = require("../db/pool");
+    const { rows } = await pool.query(
+      `SELECT pai.*, pp.id AS patient_id, u.full_name AS patient_name, u.gender, m.medicard_id
+       FROM patient_ai_intakes pai
+       JOIN patient_profiles pp ON pp.id = pai.patient_id
+       JOIN users u ON u.id = pp.user_id
+       LEFT JOIN medicards m ON m.patient_id = pp.id
+       WHERE pai.patient_id = $1
+       ORDER BY pai.created_at DESC`,
+      [Number(patientId)]
+    );
+    return res.json({ success: true, data: rows });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function updateDoctorAIIntakeStatus(req, res, next) {
+  try {
+    const { intakeId } = req.params;
+    const { status, doctorNotes } = req.body;
+    const pool = require("../db/pool");
+    const { rows } = await pool.query(
+      `UPDATE patient_ai_intakes
+       SET status = COALESCE($1, status),
+           doctor_notes = COALESCE($2, doctor_notes),
+           updated_at = now()
+       WHERE id = $3
+       RETURNING *`,
+      [status || "reviewed", doctorNotes || null, Number(intakeId)]
+    );
+    if (!rows[0]) {
+      return res.status(404).json({ success: false, message: "Intake record not found" });
+    }
+    return res.json({ success: true, data: rows[0] });
   } catch (error) {
     return next(error);
   }
@@ -824,4 +859,6 @@ module.exports = {
   markNotificationRead,
   markAllNotificationsRead,
   getAuditLogs,
-};
+  listDoctorPatientAIIntakes,
+  updateDoctorAIIntakeStatus,
+};
