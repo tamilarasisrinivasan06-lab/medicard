@@ -82,6 +82,7 @@ function PatientDetail() {
   const [confirmRevoke, setConfirmRevoke] = useState(false)
   const [confirmDeleteConsult, setConfirmDeleteConsult] = useState(null)
   const [confirmDeleteDoc, setConfirmDeleteDoc] = useState(null)
+  const [showAIChat, setShowAIChat] = useState(false)
 
   const timeline = useAsync(() => getPatientTimeline(patientId), [patientId])
   const consultations = useAsync(() => getPatientConsultations(patientId), [patientId])
@@ -180,8 +181,6 @@ function PatientDetail() {
       notify(res.message || 'Could not delete', 'error')
     }
   }
-
-  const [showAIChat, setShowAIChat] = useState(false)
 
   const tabs = [
     { value: 'overview', label: 'Overview' },
